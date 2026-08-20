@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050b14;
+  --foreground: #f8fafc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Glassmorphism translucent card utilities */
+.glass-card-dark {
+  background: rgba(9, 15, 29, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(217, 119, 6, 0.15);
+}
+
+.glass-nav-dark {
+  background: rgba(5, 11, 20, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Vintage Topographic Map Background Texture SVG Pattern */
+.bg-topo-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%23f59e0b' stroke-width='1' stroke-opacity='0.12'%3E%3Cpath d='M0 100 C 50 150, 150 50, 200 120 C 250 190, 350 80, 400 140'/%3E%3Cpath d='M0 140 C 60 190, 140 90, 210 160 C 280 230, 340 120, 400 180'/%3E%3Cpath d='M0 180 C 70 230, 130 130, 220 200 C 300 270, 330 160, 400 220'/%3E%3Cpath d='M0 240 C 90 280, 110 180, 240 250 C 320 310, 350 200, 400 280'/%3E%3Cpath d='M0 300 C 100 320, 120 240, 250 300 C 330 360, 360 250, 400 340'/%3E%3Ccircle cx='200' cy='200' r='180' stroke-dasharray='4,8' stroke-opacity='0.08'/%3E%3Ccircle cx='200' cy='200' r='120' stroke-dasharray='3,6' stroke-opacity='0.08'/%3E%3Cpath d='M 180 200 L 220 200 M 200 180 L 200 220' stroke-opacity='0.15'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Shimmer Golden Button Glow */
+.btn-golden-glow {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #d97706 100%);
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-golden-glow:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ea580c 100%);
+  box-shadow: 0 15px 30px -5px rgba(245, 158, 11, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #050b14;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+@keyframes dynamicBorderGlow {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15), inset 0 0 15px rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 28px rgba(255, 255, 255, 0.35), inset 0 0 20px rgba(255, 255, 255, 0.12);
+  }
+}
+
+.animate-dynamic-white-border {
+  animation: dynamicBorderGlow 4s infinite ease-in-out;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 15s infinite ease-in-out;
+}
+
+
