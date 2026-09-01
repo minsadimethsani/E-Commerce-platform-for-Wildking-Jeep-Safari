@@ -149,10 +149,13 @@ export const FeaturedPackages: React.FC<FeaturedPackagesProps> = ({
                     <span className="text-[11px] text-zinc-400">({pkg.reviewsCount})</span>
                   </div>
 
-                  {/* Title */}
-                  <h3 className="text-base font-bold text-white font-serif mb-2 group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
+                  {/* Title - Clickable to Single Safari Detail Page */}
+                  <a
+                    href={`/safari?id=${pkg.id}`}
+                    className="block text-base font-bold text-white font-serif mb-2 group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug"
+                  >
                     {pkg.title}
-                  </h3>
+                  </a>
                 </div>
 
                 {/* Card Footer: Price & Booking Action */}

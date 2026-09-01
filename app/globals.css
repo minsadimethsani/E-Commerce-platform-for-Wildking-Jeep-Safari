@@ -93,4 +93,73 @@ body {
   animation: pulseSlow 15s infinite ease-in-out;
 }
 
+/* Thin White Frame Circuit Loading Animation */
+@keyframes whiteBorderCircuit {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0.2;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+}
+
+.animate-white-border-circuit {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: whiteBorderCircuit 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Staggered Content Entrance Animations (Triggered after border circuit completes) */
+@keyframes pullDownFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUpFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Wildking Brand & Nav items pull down from top */
+.animate-pull-down {
+  opacity: 0;
+  animation: pullDownFromTop 0.8s cubic-bezier(0.16, 1, 0.3, 1) 2.4s forwards;
+}
+
+/* Hero Headings slide up from bottom */
+.animate-slide-up-heading {
+  opacity: 0;
+  animation: slideUpFromBottom 0.9s cubic-bezier(0.16, 1, 0.3, 1) 2.7s forwards;
+}
+
+/* Hero Subheadings / Description slide up from bottom */
+.animate-slide-up-description {
+  opacity: 0;
+  animation: slideUpFromBottom 0.9s cubic-bezier(0.16, 1, 0.3, 1) 3.0s forwards;
+}
+
+/* Hero CTA button slides up from bottom */
+.animate-slide-up-cta {
+  opacity: 0;
+  animation: slideUpFromBottom 0.9s cubic-bezier(0.16, 1, 0.3, 1) 3.2s forwards;
+}
+
 

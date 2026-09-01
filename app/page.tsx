@@ -78,6 +78,7 @@ export default function Home() {
       <Hero
         onSearch={handleSearchFilter}
         onOpenBookingWithDetails={handleHeroBookingWithDetails}
+        onOpenBooking={handleOpenGeneralBooking}
       />
 
       {/* Featured Safari Packages Grid */}

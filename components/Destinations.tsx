@@ -27,12 +27,12 @@ export const Destinations: React.FC<DestinationsProps> = ({ onSelectPark }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
           {PARK_DESTINATIONS.map((park) => (
             <div
               key={park.id}
               onClick={() => onSelectPark(park.id)}
-              className="group relative rounded-3xl overflow-hidden bg-[#0c1811] border border-emerald-900/50 hover:border-amber-500/50 transition-all duration-500 cursor-pointer shadow-2xl h-[420px] flex flex-col justify-end p-8"
+              className="group relative rounded-none overflow-hidden bg-[#0c1811] border border-emerald-900/50 hover:border-amber-500/50 transition-all duration-500 cursor-pointer shadow-2xl h-[420px] flex flex-col justify-end p-5 sm:p-6"
             >
               {/* Background Image */}
               <img
@@ -40,37 +40,37 @@ export const Destinations: React.FC<DestinationsProps> = ({ onSelectPark }) => {
                 alt={park.name}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 filter brightness-90"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#06110a] via-[#06110a]/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#06110a] via-[#06110a]/70 to-transparent" />
 
               {/* Top Distance Pill */}
-              <div className="absolute top-6 left-6 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-medium text-amber-300 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                <span>{park.distanceFromColombo}</span>
+              <div className="absolute top-4 left-4 px-2.5 py-1 rounded-none bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-medium text-amber-300 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-amber-400" />
+                <span className="truncate max-w-[120px]">{park.distanceFromColombo}</span>
               </div>
 
               {/* Top Action Arrow */}
-              <div className="absolute top-6 right-6 w-10 h-10 rounded-full bg-amber-400/90 text-emerald-950 flex items-center justify-center group-hover:bg-amber-300 group-hover:scale-110 transition-all shadow-lg">
-                <ArrowUpRight className="w-5 h-5 stroke-[2.5]" />
+              <div className="absolute top-4 right-4 w-8 h-8 rounded-none bg-amber-400/90 text-emerald-950 flex items-center justify-center group-hover:bg-amber-300 group-hover:scale-110 transition-all shadow-lg">
+                <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
               </div>
 
               {/* Park Info Content */}
-              <div className="relative z-10">
-                <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-1">
+              <div className="relative z-10 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 block line-clamp-1">
                   {park.keyFact}
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-serif mb-2 group-hover:text-amber-300 transition-colors">
+                <h3 className="text-xl font-bold text-white font-serif group-hover:text-amber-300 transition-colors line-clamp-1">
                   {park.name}
                 </h3>
-                <p className="text-xs sm:text-sm text-zinc-300 font-light mb-4">
+                <p className="text-xs text-zinc-300 font-light line-clamp-2">
                   {park.tagline}
                 </p>
 
                 {/* Primary Species Tags */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {park.primarySpecies.map((sp, idx) => (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {park.primarySpecies.slice(0, 3).map((sp, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 rounded-md bg-emerald-950/80 border border-emerald-800/60 text-[11px] font-medium text-emerald-200"
+                      className="px-2 py-0.5 rounded-none bg-emerald-950/80 border border-emerald-800/60 text-[10px] font-medium text-emerald-200"
                     >
                       🐾 {sp}
                     </span>
@@ -78,9 +78,9 @@ export const Destinations: React.FC<DestinationsProps> = ({ onSelectPark }) => {
                 </div>
 
                 {/* Best Season */}
-                <div className="flex items-center gap-2 text-xs text-amber-300/90 pt-3 border-t border-emerald-900/60">
-                  <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Best Season: {park.bestSeason}</span>
+                <div className="flex items-center gap-1.5 text-[11px] text-amber-300/90 pt-2 border-t border-emerald-900/60">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">{park.bestSeason}</span>
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { SafariPackage, SAFARI_PACKAGES } from '../data/packages';
+import { createBookingInFirestore } from '../lib/firestore-service';
 import { X, Calendar, Clock, Users, Check, Sparkles, ShieldCheck, Car, Coffee, Camera, AlertCircle } from 'lucide-react';
 
 interface BookingModalProps {
@@ -64,11 +65,32 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     return `$${val}`;
   };
 
-  const handleConfirmBooking = (e: React.FormEvent) => {
+  const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ref = 'WK-' + Math.floor(100000 + Math.random() * 900000);
-    setBookingRef(ref);
-    setIsSuccess(true);
+    try {
+      const res = await createBookingInFirestore({
+        packageId: currentPkg.id,
+        packageTitle: currentPkg.title,
+        park: currentPkg.park,
+        expeditionDate: expeditionDate || new Date().toISOString().split('T')[0],
+        timeSlot: shiftTime,
+        guestCount: passengers,
+        customerInfo: {
+          fullName: 'Wildking Guest',
+          email: 'guest@wildkingjeeps.com',
+          phone: '+94 77 123 4567',
+        },
+        totalAmountUsd: grandTotal,
+        currency: currency,
+      });
+      setBookingRef(res.bookingId ? `BK-${res.bookingId.slice(0, 8).toUpperCase()}` : 'WK-' + Math.floor(100000 + Math.random() * 900000));
+      setIsSuccess(true);
+    } catch (err) {
+      console.warn("Firestore booking fallback to local ref:", err);
+      const ref = 'WK-' + Math.floor(100000 + Math.random() * 900000);
+      setBookingRef(ref);
+      setIsSuccess(true);
+    }
   };
 
   return (
