@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Compass, Phone, Mail, MapPin, Send, ShieldCheck, Heart, Sparkles } from 'lucide-react';
+import { Compass, Phone, Mail, MapPin, Send, ShieldCheck, Heart, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -126,8 +126,9 @@ export const Footer: React.FC = () => {
             </p>
 
             {subscribed ? (
-              <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
-                ✓ Subscribed to Wildlife Alerts!
+              <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Subscribed to Wildlife Alerts!</span>
               </div>
             ) : (
               <form onSubmit={handleNewsletter} className="space-y-2">
@@ -159,7 +160,10 @@ export const Footer: React.FC = () => {
             © {new Date().getFullYear()} Wildking Safari (Pvt) Ltd. All rights reserved. Registered Sri Lanka Tourism Development Authority (SLTDA).
           </div>
           <div className="flex items-center gap-4 text-[11px] text-zinc-400">
-            <span>🔒 256-bit SSL Encrypted Booking</span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>256-bit SSL Encrypted Booking</span>
+            </span>
             <span>•</span>
             <span>Visa • Mastercard • Apple Pay</span>
           </div>

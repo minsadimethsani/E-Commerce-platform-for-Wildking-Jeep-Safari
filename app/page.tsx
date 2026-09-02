@@ -56,11 +56,7 @@ export default function Home() {
   };
 
   const handleSelectParkFromDestinations = (parkId: string) => {
-    setActiveParkFilter(parkId);
-    const elem = document.getElementById('safaris');
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth' });
-    }
+    window.location.href = `/parks/${parkId}`;
   };
 
   return (

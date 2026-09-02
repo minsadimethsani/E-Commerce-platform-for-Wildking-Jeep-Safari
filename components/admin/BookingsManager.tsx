@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { BookingDoc } from "@/lib/types/firestore";
+import { Calendar, X } from "lucide-react";
 
 interface BookingsManagerProps {
   bookings: BookingDoc[];
@@ -45,7 +46,7 @@ export default function BookingsManager({ bookings, onUpdateStatus }: BookingsMa
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/80 p-5 rounded-2xl border border-emerald-800/40">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span>📅</span> Safari Bookings & Reservations
+            <Calendar className="w-5 h-5 text-amber-400" /> Safari Bookings & Reservations
           </h2>
           <p className="text-xs text-slate-400 mt-1">Manage guest itineraries, pickup locations, and payment status.</p>
         </div>
@@ -191,9 +192,9 @@ export default function BookingsManager({ bookings, onUpdateStatus }: BookingsMa
               </div>
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 

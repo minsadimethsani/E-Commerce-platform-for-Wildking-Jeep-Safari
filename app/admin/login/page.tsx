@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { loginAdmin, isAdminAuthenticated, DEFAULT_ADMIN_CREDENTIALS } from "@/lib/admin-auth";
+import { Compass, Key, AlertTriangle } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -50,8 +51,8 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full relative z-10 space-y-6">
         {/* Header Logo */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center bg-amber-500 text-slate-950 p-4 rounded-2xl shadow-xl shadow-amber-500/20 text-3xl font-extrabold mb-1">
-            🛻
+          <div className="inline-flex items-center justify-center bg-amber-500 text-slate-950 p-4 rounded-2xl shadow-xl shadow-amber-500/20 mb-1">
+            <Compass className="w-8 h-8 stroke-[2.2]" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">
             Wildking <span className="text-amber-400">Admin</span>
@@ -66,13 +67,13 @@ export default function AdminLoginPage() {
           {/* Default Admin Quick-Fill Banner */}
           <div className="bg-emerald-950/80 border border-emerald-700/60 p-4 rounded-2xl space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="font-extrabold text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1">
-                🔑 Default Admin Credentials
+              <span className="font-extrabold text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-amber-400" /> Default Admin Credentials
               </span>
               <button
                 type="button"
                 onClick={handleFillDemoCredentials}
-                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-[10px] transition-all"
+                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-[10px] transition-all cursor-pointer"
               >
                 Auto Fill
               </button>
@@ -84,8 +85,9 @@ export default function AdminLoginPage() {
           </div>
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold animate-shake">
-              ⚠️ {error}
+            <div className="p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold animate-shake flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 

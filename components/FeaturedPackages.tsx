@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SAFARI_PACKAGES, SafariPackage } from '../data/packages';
-import { Star, Clock, MapPin, ArrowRight } from 'lucide-react';
+import { getPackagesFromFirestore } from '../lib/firestore-service';
+import { SafariPackageDoc } from '../lib/types/firestore';
+import { Star, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface FeaturedPackagesProps {
   currency: 'USD' | 'EUR' | 'LKR';
@@ -10,176 +12,240 @@ interface FeaturedPackagesProps {
   activeFilterPark?: string;
 }
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&w=1200&q=80';
+
 export const FeaturedPackages: React.FC<FeaturedPackagesProps> = ({
   currency,
   onSelectPackage,
   activeFilterPark = 'all',
 }) => {
   const [selectedParkTab, setSelectedParkTab] = useState<string>(activeFilterPark);
+  const [allPackages, setAllPackages] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const filteredPackages = SAFARI_PACKAGES.filter((pkg) => {
+  // Carousel scroll navigation states
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const firestorePkgs = await getPackagesFromFirestore();
+        if (firestorePkgs && firestorePkgs.length > 0) {
+          setAllPackages(firestorePkgs);
+        }
+      } catch (err) {
+        console.error("Error fetching packages in FeaturedPackages:", err);
+      }
+    };
+    fetchPackages();
+  }, []);
+
+  const filteredPackages = allPackages.filter((pkg) => {
     if (selectedParkTab === 'all') return true;
-    return pkg.park === selectedParkTab;
+    const pkgPark = (pkg.park || '').toLowerCase();
+    const tabLower = selectedParkTab.toLowerCase();
+    return pkgPark === tabLower || (pkg.parkName && pkg.parkName.toLowerCase().includes(tabLower));
   });
 
-  const formatPrice = (pkg: SafariPackage) => {
+  const checkScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [filteredPackages, selectedParkTab]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const scrollAmount = scrollRef.current.clientWidth * 0.75;
+    scrollRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  const formatPrice = (pkg: SafariPackageDoc) => {
     if (currency === 'EUR') return `€${pkg.priceEur}`;
     if (currency === 'LKR') return `Rs. ${pkg.priceLkr.toLocaleString()}`;
     return `$${pkg.priceUsd}`;
   };
 
   return (
-    <section id="safaris" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#070e0a] relative overflow-hidden">
-      {/* Decorative Glow */}
+    <section id="safaris" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#050b14] relative overflow-hidden font-sans">
+      {/* Background Subtle Ambient Glows */}
       <div className="absolute top-1/4 left-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+      <div className="max-w-7xl mx-auto relative z-10 space-y-8">
+        {/* Section Header with Title & Park Filter Tabs */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
+            <h2 className="text-3xl sm:text-5xl font-black text-white font-serif tracking-tight uppercase">
               Featured Safari Packages
             </h2>
-            <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-xl font-light">
-              Choose from private dawn patrols, full-day deep wilderness expeditions, and elephant sanctuary tours.
-            </p>
           </div>
 
           {/* Park Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2 bg-[#0d1c14] p-1.5 rounded-xl border border-emerald-800/40">
-            <button
-              onClick={() => setSelectedParkTab('all')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${selectedParkTab === 'all'
-                  ? 'bg-amber-400 text-emerald-950 shadow-md shadow-amber-400/20'
-                  : 'text-zinc-300 hover:text-white hover:bg-emerald-900/40'
+          <div className="flex flex-wrap items-center gap-1.5 bg-[#08101d] p-1.5 rounded-2xl border border-slate-800">
+            {[
+              { id: 'all', label: 'All Parks' },
+              { id: 'yala', label: 'Yala' },
+              { id: 'udawalawe', label: 'Udawalawe' },
+              { id: 'wilpattu', label: 'Wilpattu' },
+              { id: 'minneriya', label: 'Minneriya' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedParkTab(tab.id)}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  selectedParkTab === tab.id
+                    ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20 font-black'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900'
                 }`}
-            >
-              All Parks
-            </button>
-            <button
-              onClick={() => setSelectedParkTab('yala')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${selectedParkTab === 'yala'
-                  ? 'bg-amber-400 text-emerald-950 shadow-md shadow-amber-400/20'
-                  : 'text-zinc-300 hover:text-white hover:bg-emerald-900/40'
-                }`}
-            >
-              Yala
-            </button>
-            <button
-              onClick={() => setSelectedParkTab('udawalawe')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${selectedParkTab === 'udawalawe'
-                  ? 'bg-amber-400 text-emerald-950 shadow-md shadow-amber-400/20'
-                  : 'text-zinc-300 hover:text-white hover:bg-emerald-900/40'
-                }`}
-            >
-              Udawalawe
-            </button>
-            <button
-              onClick={() => setSelectedParkTab('wilpattu')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${selectedParkTab === 'wilpattu'
-                  ? 'bg-amber-400 text-emerald-950 shadow-md shadow-amber-400/20'
-                  : 'text-zinc-300 hover:text-white hover:bg-emerald-900/40'
-                }`}
-            >
-              Wilpattu
-            </button>
-            <button
-              onClick={() => setSelectedParkTab('minneriya')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${selectedParkTab === 'minneriya'
-                  ? 'bg-amber-400 text-emerald-950 shadow-md shadow-amber-400/20'
-                  : 'text-zinc-300 hover:text-white hover:bg-emerald-900/40'
-                }`}
-            >
-              Minneriya
-            </button>
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Packages Cards Grid - 4 Column Layout with Square Corners */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
-          {filteredPackages.map((pkg) => (
-            <div
-              key={pkg.id}
-              className="group bg-[#0b1711] border border-emerald-900/50 rounded-none overflow-hidden hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between shadow-2xl hover:shadow-amber-500/10"
+        {/* Carousel Container with Parallel Side Navigation Arrows */}
+        <div className="relative group/carousel">
+          {/* Left Arrow - Parallel in front of first visible card */}
+          <button
+            type="button"
+            onClick={() => handleScroll('left')}
+            disabled={!canScrollLeft}
+            aria-label="Previous Safari Packages"
+            className={`absolute -left-3 sm:-left-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 backdrop-blur-md shadow-2xl ${
+              canScrollLeft
+                ? 'bg-[#08101d]/90 border border-amber-500/50 text-amber-400 hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 hover:scale-110 shadow-amber-500/20 cursor-pointer active:scale-95'
+                : 'bg-slate-900/30 border border-slate-800 text-slate-600 opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronLeft className="w-6 h-6 stroke-[3]" />
+          </button>
+
+          {/* Right Arrow - Parallel at end of last visible card */}
+          <button
+            type="button"
+            onClick={() => handleScroll('right')}
+            disabled={!canScrollRight}
+            aria-label="Next Safari Packages"
+            className={`absolute -right-3 sm:-right-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 backdrop-blur-md shadow-2xl ${
+              canScrollRight
+                ? 'bg-[#08101d]/90 border border-amber-500/50 text-amber-400 hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 hover:scale-110 shadow-amber-500/20 cursor-pointer active:scale-95'
+                : 'bg-slate-900/30 border border-slate-800 text-slate-600 opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronRight className="w-6 h-6 stroke-[3]" />
+          </button>
+
+          {/* Horizontally Scrollable Cards Slider */}
+          <div
+            ref={scrollRef}
+            onScroll={checkScroll}
+            className="flex items-stretch gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-3 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {filteredPackages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className="group flex flex-col justify-between shrink-0 w-[290px] sm:w-[340px] md:w-[360px] lg:w-[380px] snap-start transition-all duration-300"
+              >
+                {/* Media Cover Image */}
+                <div className="relative h-56 w-full rounded-none overflow-hidden shadow-xl bg-slate-900 group-hover:shadow-amber-500/10 transition-shadow duration-300">
+                  <img
+                    src={pkg.image || FALLBACK_IMAGE}
+                    alt={pkg.title}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = FALLBACK_IMAGE;
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out filter brightness-95"
+                  />
+                </div>
+
+                {/* Card Details */}
+                <div className="pt-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    {/* Location Tag */}
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-amber-400">
+                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="truncate">{pkg.parkName}</span>
+                    </div>
+
+                    {/* Rating & Duration */}
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <div className="flex items-center text-amber-400 font-bold">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
+                        <span className="ml-1 text-white text-xs font-bold">{pkg.rating}</span>
+                        <span className="ml-1 text-slate-400 font-normal">({pkg.reviewsCount})</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-slate-400 text-[11px] font-medium">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{pkg.duration}</span>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <a
+                      href={`/safari?id=${pkg.id}`}
+                      className="block text-base font-bold text-white font-serif group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug pt-0.5"
+                    >
+                      {pkg.title}
+                    </a>
+                  </div>
+
+                  {/* Pricing & View Details Action Row */}
+                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3 mt-auto">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
+                        From
+                      </span>
+                      <div className="text-xl font-extrabold text-amber-400 font-sans">
+                        {formatPrice(pkg)}
+                      </div>
+                    </div>
+
+                    <a
+                      href={`/safari?id=${pkg.id}`}
+                      className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-none flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:scale-105 transition-all shrink-0 cursor-pointer"
+                    >
+                      <span>View Details</span>
+                      <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+            ))}
+
+            {/* End Card: View More Packages with Arrow Caption */}
+            <a
+              href="/tours"
+              className="group/endcard flex flex-col items-center justify-center shrink-0 w-[240px] sm:w-[280px] snap-start rounded-none bg-gradient-to-b from-[#091322] to-[#060d17] border border-amber-500/30 hover:border-amber-400 p-8 text-center space-y-4 transition-all duration-300 hover:scale-[1.02] shadow-2xl cursor-pointer my-0.5"
             >
-              {/* Image & Badge Overlay */}
-              <div className="relative h-48 sm:h-52 w-full overflow-hidden">
-                <img
-                  src={pkg.image}
-                  alt={pkg.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b1711] via-transparent to-black/40" />
-
-                {/* Top Badge */}
-                {pkg.badge && (
-                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-none bg-amber-400 text-emerald-950 text-[10px] font-extrabold uppercase tracking-wider shadow-lg">
-                    {pkg.badge}
-                  </div>
-                )}
-
-                {/* Sightings Guarantee Badge */}
-                <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-none bg-emerald-950/80 border border-emerald-500/40 backdrop-blur-md text-amber-300 text-[10px] font-semibold">
-                  {pkg.sightingsRate}
-                </div>
-
-                {/* Duration & Park Pill */}
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-zinc-200">
-                  <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-none border border-white/10 truncate max-w-[55%]">
-                    <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
-                    <span className="truncate">{pkg.parkName}</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-none border border-white/10 shrink-0">
-                    <Clock className="w-3 h-3 text-amber-400 shrink-0" />
-                    <span>{pkg.duration}</span>
-                  </div>
-                </div>
+              <div className="w-16 h-16 rounded-none bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center group-hover/endcard:bg-amber-400 group-hover/endcard:text-slate-950 group-hover/endcard:scale-110 transition-all duration-300 shadow-lg">
+                <ArrowRight className="w-8 h-8 stroke-[2.5]" />
               </div>
-
-              {/* Card Body */}
-              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  {/* Rating & Review Count */}
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className="flex items-center text-amber-400">
-                      <Star className="w-3.5 h-3.5 fill-amber-400" />
-                      <span className="ml-1 text-xs font-bold text-white">{pkg.rating}</span>
-                    </div>
-                    <span className="text-[11px] text-zinc-400">({pkg.reviewsCount})</span>
-                  </div>
-
-                  {/* Title - Clickable to Single Safari Detail Page */}
-                  <a
-                    href={`/safari?id=${pkg.id}`}
-                    className="block text-base font-bold text-white font-serif mb-2 group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug"
-                  >
-                    {pkg.title}
-                  </a>
-                </div>
-
-                {/* Card Footer: Price & Booking Action */}
-                <div className="pt-3 border-t border-emerald-900/40 flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-zinc-400 block tracking-wider">
-                      From
-                    </span>
-                    <div className="text-lg sm:text-xl font-extrabold text-amber-400 font-sans">
-                      {formatPrice(pkg)}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => onSelectPackage(pkg)}
-                    className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-bold text-[11px] uppercase tracking-wider rounded-none flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-105 transition-all shrink-0"
-                  >
-                    <span>Book</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-black font-serif text-white uppercase group-hover/endcard:text-amber-400 transition-colors">
+                  View More Packages
+                </h3>
+                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                  Explore our full catalogue of custom 4x4 safaris
+                </p>
               </div>
-            </div>
-          ))}
+            </a>
+          </div>
         </div>
       </div>
     </section>

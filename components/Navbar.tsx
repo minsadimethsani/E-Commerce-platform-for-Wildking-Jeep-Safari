@@ -122,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {PARK_DESTINATIONS.map((park) => (
                         <a
                           key={park.id}
-                          href={`/tours?park=${park.id}`}
+                          href={`/parks/${park.id}`}
                           onClick={() => setIsMegaMenuOpen(false)}
                           className="group/park p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 hover:bg-slate-900 transition-all flex items-center gap-3"
                         >
@@ -203,9 +203,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 text-slate-400 hover:text-white text-xs font-bold"
+                        className="absolute right-2.5 text-slate-400 hover:text-white p-0.5 rounded transition-colors"
                       >
-                        ✕
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </form>
@@ -350,7 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {PARK_DESTINATIONS.map((park) => (
                     <a
                       key={park.id}
-                      href={`/tours?park=${park.id}`}
+                      href={`/parks/${park.id}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block text-xs font-semibold text-amber-300 hover:text-amber-400 py-1"
                     >

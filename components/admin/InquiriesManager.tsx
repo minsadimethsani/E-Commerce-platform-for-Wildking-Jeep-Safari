@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { InquiryDoc } from "@/lib/types/firestore";
+import { MessageSquare } from "lucide-react";
 
 interface InquiriesManagerProps {
   inquiries: InquiryDoc[];
@@ -26,12 +27,12 @@ export default function InquiriesManager({ inquiries, onUpdateStatus }: Inquirie
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/80 p-5 rounded-2xl border border-emerald-800/40">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span>💬</span> Guest Inquiries & Custom Safari Requests
+            <MessageSquare className="w-5 h-5 text-amber-400" /> Guest Inquiries & Custom Safari Requests
           </h2>
           <p className="text-xs text-slate-400 mt-1">Review contact form submissions and customize wildlife itineraries.</p>
         </div>

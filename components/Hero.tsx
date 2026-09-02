@@ -18,6 +18,28 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
   return (
     <section className="relative min-h-screen w-full pt-28 pb-16 lg:pt-36 lg:pb-24 flex flex-col justify-center items-center overflow-hidden bg-[#050b14] text-white">
+      {/* Dynamic White Thin Rounded Corner Border Frame for Hero Section */}
+      <div 
+        className="pointer-events-none absolute inset-2 sm:inset-4 z-20 rounded-2xl sm:rounded-3xl overflow-hidden animate-dynamic-white-border"
+        aria-hidden="true"
+      >
+        <svg className="w-full h-full">
+          <rect
+            x="1"
+            y="1"
+            width="calc(100% - 2px)"
+            height="calc(100% - 2px)"
+            rx="16"
+            ry="16"
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.85)"
+            strokeWidth="1.5"
+            pathLength="100"
+            className="animate-white-border-circuit"
+          />
+        </svg>
+      </div>
+
       {/* Hero Background Video Reel */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <video

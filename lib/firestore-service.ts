@@ -205,3 +205,41 @@ export async function saveUserProfileInFirestore(user: UserDoc) {
     throw new Error(error.message || "Failed to save user profile");
   }
 }
+
+export async function savePackageInFirestore(pkg: SafariPackageDoc) {
+  try {
+    const pkgRef = doc(db, "packages", pkg.id);
+    await setDoc(
+      pkgRef,
+      {
+        ...pkg,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to save package in Firestore:", error);
+    return { success: false, error: error.message || error };
+  }
+}
+
+export async function saveParkInFirestore(park: ParkDestinationDoc) {
+  try {
+    const parkRef = doc(db, "destinations", park.id);
+    await setDoc(
+      parkRef,
+      {
+        ...park,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to save safari park in Firestore:", error);
+    return { success: false, error: error.message || error };
+  }
+}
+
+

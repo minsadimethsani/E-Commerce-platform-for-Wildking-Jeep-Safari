@@ -7,15 +7,17 @@ import {
   getPackagesFromFirestore,
   getFleetFromFirestore,
   getReviewsFromFirestore,
+  getDestinationsFromFirestore,
   seedFirestoreDatabase,
 } from "@/lib/firestore-service";
-import { BookingDoc, InquiryDoc, SafariPackageDoc, JeepVehicleDoc, ReviewDoc } from "@/lib/types/firestore";
+import { BookingDoc, InquiryDoc, SafariPackageDoc, JeepVehicleDoc, ReviewDoc, ParkDestinationDoc } from "@/lib/types/firestore";
 
 import AdminSidebar, { AdminTab } from "@/components/admin/AdminSidebar";
 import OverviewStats from "@/components/admin/OverviewStats";
 import BookingsManager from "@/components/admin/BookingsManager";
 import InquiriesManager from "@/components/admin/InquiriesManager";
 import PackagesManager from "@/components/admin/PackagesManager";
+import ParksManager from "@/components/admin/ParksManager";
 import FleetManager from "@/components/admin/FleetManager";
 import ReviewsManager from "@/components/admin/ReviewsManager";
 
@@ -102,6 +104,7 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<BookingDoc[]>(MOCK_BOOKINGS);
   const [inquiries, setInquiries] = useState<InquiryDoc[]>(MOCK_INQUIRIES);
   const [packages, setPackages] = useState<SafariPackageDoc[]>([]);
+  const [destinations, setDestinations] = useState<ParkDestinationDoc[]>([]);
   const [fleet, setFleet] = useState<JeepVehicleDoc[]>([]);
   const [reviews, setReviews] = useState<ReviewDoc[]>([]);
 
@@ -113,17 +116,27 @@ export default function AdminPage() {
 
     setIsAuthenticated(true);
 
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") as AdminTab | null;
+      if (tabParam && ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews"].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+
     const loadAdminData = async () => {
       setIsLoading(true);
       try {
-        const [pkgs, vhcls, revs] = await Promise.all([
+        const [pkgs, vhcls, revs, dests] = await Promise.all([
           getPackagesFromFirestore(),
           getFleetFromFirestore(),
           getReviewsFromFirestore(),
+          getDestinationsFromFirestore(),
         ]);
         setPackages(pkgs);
         setFleet(vhcls);
         setReviews(revs);
+        setDestinations(dests);
       } catch (err) {
         console.error("Error loading admin data from Firestore:", err);
       } finally {
@@ -150,14 +163,16 @@ export default function AdminPage() {
     setIsSeeding(true);
     try {
       await seedFirestoreDatabase();
-      const [pkgs, vhcls, revs] = await Promise.all([
+      const [pkgs, vhcls, revs, dests] = await Promise.all([
         getPackagesFromFirestore(),
         getFleetFromFirestore(),
         getReviewsFromFirestore(),
+        getDestinationsFromFirestore(),
       ]);
       setPackages(pkgs);
       setFleet(vhcls);
       setReviews(revs);
+      setDestinations(dests);
     } finally {
       setIsSeeding(false);
     }
@@ -169,7 +184,7 @@ export default function AdminPage() {
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white p-4">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white p-4 font-sans">
         <div className="text-center space-y-3">
           <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-emerald-300 text-sm font-semibold">Loading Wildking Admin Portal...</p>
@@ -190,22 +205,6 @@ export default function AdminPage() {
 
       {/* Main Content Area */}
       <main className="flex-grow p-4 md:p-8 space-y-6 overflow-y-auto max-h-screen">
-        {/* Top Header Bar */}
-        <header className="flex justify-between items-center bg-slate-900/90 border border-emerald-800/40 p-4 rounded-2xl shadow-lg">
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
-              Logged in as {session?.role || "Super Admin"} ({session?.email})
-            </span>
-            <h2 className="text-lg font-black text-white capitalize">{activeTab} Manager</h2>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <span className="text-xs text-emerald-300 font-semibold bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800">
-              🟢 System Online
-            </span>
-          </div>
-        </header>
-
         {/* Tab Views */}
         {activeTab === "overview" && (
           <OverviewStats
@@ -233,6 +232,10 @@ export default function AdminPage() {
 
         {activeTab === "packages" && (
           <PackagesManager packages={packages} />
+        )}
+
+        {activeTab === "parks" && (
+          <ParksManager destinations={destinations} />
         )}
 
         {activeTab === "fleet" && (

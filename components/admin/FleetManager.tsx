@@ -2,6 +2,7 @@
 
 import React from "react";
 import { JeepVehicleDoc } from "@/lib/types/firestore";
+import { Truck } from "lucide-react";
 
 interface FleetManagerProps {
   fleet: JeepVehicleDoc[];
@@ -9,12 +10,12 @@ interface FleetManagerProps {
 
 export default function FleetManager({ fleet }: FleetManagerProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex justify-between items-center bg-slate-900/80 p-5 rounded-2xl border border-emerald-800/40">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span>🚜</span> Wildking 4x4 Jeep Fleet
+            <Truck className="w-5 h-5 text-amber-400" /> Wildking 4x4 Jeep Fleet
           </h2>
           <p className="text-xs text-slate-400 mt-1">Heavy-duty Land Cruisers & Defender vehicles built for national park safaris.</p>
         </div>

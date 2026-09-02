@@ -47,6 +47,18 @@ export interface ParkDestination {
   bestSeason: string;
   keyFact: string;
   distanceFromColombo: string;
+  description?: string;
+  areaKm2?: string;
+  establishedYear?: string;
+  gates?: string[];
+  operatingHours?: string;
+  highlights?: string[];
+  gallery?: string[];
+  wildlifeGuide?: {
+    name: string;
+    description: string;
+    sightingSpot: string;
+  }[];
 }
 
 export interface ReviewItem {
@@ -110,7 +122,7 @@ export const SAFARI_PACKAGES: SafariPackage[] = [
     reviewsCount: 428,
     sightingsRate: '98.5% Spotting Guarantee',
     badge: 'Most Popular',
-    image: 'https://images.unsplash.com/photo-1547970810-dc0eac25ee85?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&w=1200&q=80',
     description: 'Enter the famous Block 1 of Yala at dawn when leopards are actively hunting and sloth bears emerge from the bush. Accompanied by our Senior Master Tracker.',
     highlights: [
       'Dawn entry advantage for active big cats',
@@ -300,7 +312,40 @@ export const PARK_DESTINATIONS: ParkDestination[] = [
     primarySpecies: ['Sri Lankan Leopard', 'Sloth Bear', 'Asian Elephant', 'Mugger Crocodile', 'Spot-billed Pelican'],
     bestSeason: 'February to July (Best Waterhole Sightings)',
     keyFact: 'Highest density of wild leopards per square kilometer on Earth.',
-    distanceFromColombo: '300 km (approx 4.5 hours drive)'
+    distanceFromColombo: '300 km (approx 4.5 hours drive)',
+    description: 'Yala National Park is Sri Lanka’s most visited and second largest national park, bordering the Indian Ocean in the southeastern region of the island. Spanning over 979 square kilometers, Yala encompasses diverse ecosystems ranging from moist monsoon forests and dry thorn scrublands to freshwater wetlands and coastal lagoons. Renowned globally for having the highest concentration of wild leopards (Panthera pardus kotiya) on Earth, Yala Block 1 offers extraordinary opportunities to observe elusive big cats, sloth bears, Asian elephants, and over 215 species of birds.',
+    areaKm2: '979 km²',
+    establishedYear: '1938',
+    operatingHours: '6:00 AM – 6:00 PM (Daily)',
+    gates: ['Palatupana Gate (Main Block 1)', 'Katagamuwa Gate (Block 2)', 'Galge Gate (Block 3 & 5)'],
+    highlights: [
+      'Highest density of leopards in the world in Block 1',
+      'Picturesque coastal scenery meeting savanna thorn forests',
+      'Patuwalu & Sithulpawwa ancient monastery heritage sites within park boundaries',
+      'Rich wetland avian diversity across coastal lagoons'
+    ],
+    gallery: [
+      'https://images.unsplash.com/photo-1547970810-dc0eac25ee85?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80'
+    ],
+    wildlifeGuide: [
+      {
+        name: 'Sri Lankan Leopard',
+        description: 'The apex predator of Sri Lanka. Frequently spotted resting on high rocky outcrops or hunting along dusty trails.',
+        sightingSpot: 'Block 1 - Patanangala & Heenwewa'
+      },
+      {
+        name: 'Sloth Bear',
+        description: 'Shy and nocturnal, sloth bears are actively seen during the Palu fruit season (May - July).',
+        sightingSpot: 'Galge & Block 1 Scrub Forest'
+      },
+      {
+        name: 'Asian Elephant',
+        description: 'Solitary tuskers and family herds roaming between waterholes and coastal scrubland.',
+        sightingSpot: 'Buthawa & Sithulpawwa Corridors'
+      }
+    ]
   },
   {
     id: 'udawalawe',
@@ -311,7 +356,39 @@ export const PARK_DESTINATIONS: ParkDestination[] = [
     primarySpecies: ['Asian Elephant Herds', 'Water Buffalo', 'Changeable Hawk-Eagle', 'Sambar Deer', 'Monitor Lizard'],
     bestSeason: 'Year-Round (Guaranteed Daily Elephant Encounters)',
     keyFact: 'Home to over 600 wild Asian elephants inhabiting lush grasslands.',
-    distanceFromColombo: '180 km (approx 3.5 hours drive)'
+    distanceFromColombo: '180 km (approx 3.5 hours drive)',
+    description: 'Udawalawe National Park lies on the boundary of Sabaragamuwa and Uva Provinces, created to provide a sanctuary for wild animals displaced by the construction of the Udawalawe Reservoir on the Walawe River. Spanning 308 square kilometers, Udawalawe is widely considered one of the best places in Asia to see wild elephants up close in their natural habitat. With its open savanna-like grasslands and scenic lake backdrop, herds of elephants, water buffalos, sambar deer, and majestic raptors are easily spotted on any safari drive.',
+    areaKm2: '308 km²',
+    establishedYear: '1972',
+    operatingHours: '6:00 AM – 6:00 PM (Daily)',
+    gates: ['Main Entrance Gate (Udawalawe Reservoir Road)'],
+    highlights: [
+      'Guaranteed close-up encounters with herds of Asian elephants',
+      'Vast open grasslands providing unobstructed 360-degree photography vistas',
+      'Udawalawe Reservoir birdwatching with eagles, storks, and pelicans',
+      'Proximity to the Udawalawe Elephant Transit Home'
+    ],
+    gallery: [
+      'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1581852017103-68accd5509b6?auto=format&fit=crop&w=1200&q=80'
+    ],
+    wildlifeGuide: [
+      {
+        name: 'Asian Elephant Herds',
+        description: 'Resident herds of over 600 wild elephants, including adorable calves bathing in the reservoir at dusk.',
+        sightingSpot: 'Udawalawe Reservoir Basin & Grasslands'
+      },
+      {
+        name: 'Wild Water Buffalo',
+        description: 'Large herds resting in mud wallows and shallow marshlands throughout the park.',
+        sightingSpot: 'Walawe River Marshes'
+      },
+      {
+        name: 'Changeable Hawk-Eagle',
+        description: 'Formidable raptor frequently seen perched on high dead trees scanning for prey.',
+        sightingSpot: 'Open Savanna Trees'
+      }
+    ]
   },
   {
     id: 'wilpattu',
@@ -322,7 +399,39 @@ export const PARK_DESTINATIONS: ParkDestination[] = [
     primarySpecies: ['Sloth Bear', 'Leopard', 'Spotted Deer', 'Painted Stork', 'Python'],
     bestSeason: 'May to September',
     keyFact: 'Features over 60 natural sand-rimmed water basins called "Willus".',
-    distanceFromColombo: '180 km (approx 3.5 hours drive)'
+    distanceFromColombo: '180 km (approx 3.5 hours drive)',
+    description: 'Wilpattu National Park is Sri Lanka’s largest and oldest national park, situated on the northwest coast near Anuradhapura. Covering 1,317 square kilometers, Wilpattu is world-renowned for its unique feature: over 60 natural, sand-rimmed water basins known as "Willus". The park’s dense dry zone forests and serene lake basins offer an exclusive, uncrowded wilderness experience where elusive Sri Lankan leopards, sloth bears, spotted deer, and barking deer thrive in tranquil privacy.',
+    areaKm2: '1,317 km²',
+    establishedYear: '1938',
+    operatingHours: '6:00 AM – 6:00 PM (Daily)',
+    gates: ['Hunuwilagama Main Gate', 'Eluwankulama Gate (West Entrance)'],
+    highlights: [
+      'Sri Lanka’s largest national park with 60+ natural Willu lakes',
+      'Serene, peaceful safari trails with low vehicle density',
+      'High probability of sloth bear sightings around sand basins',
+      'Rich historical legacy dating back to Prince Vijaya’s landing at Kudiramalai Point'
+    ],
+    gallery: [
+      'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1547970810-dc0eac25ee85?auto=format&fit=crop&w=1200&q=80'
+    ],
+    wildlifeGuide: [
+      {
+        name: 'Sloth Bear',
+        description: 'Wilpattu is famed for its sloth bear population roaming the soft sand trails surrounding natural lakes.',
+        sightingSpot: 'Kumbuk Wewa & Mahawilachchiya Track'
+      },
+      {
+        name: 'Sri Lankan Leopard',
+        description: 'Large male leopards frequently use the soft white sand trails as their territory highways.',
+        sightingSpot: 'Kokkare & Lunu Wewa Willus'
+      },
+      {
+        name: 'Spotted Deer (Axis Deer)',
+        description: 'Vast herds grazing peaceably along lake fringes surrounded by dense green forest canopy.',
+        sightingSpot: 'Main Willu Circuit'
+      }
+    ]
   },
   {
     id: 'minneriya',
@@ -333,7 +442,39 @@ export const PARK_DESTINATIONS: ParkDestination[] = [
     primarySpecies: ['Elephant Herds', 'Purple-faced Langur', 'Cormorants', 'Grey Heron'],
     bestSeason: 'July to October (Peak Gathering Season)',
     keyFact: 'Named by CNN as one of the world’s top wildlife natural spectacles.',
-    distanceFromColombo: '175 km (approx 3.5 hours drive)'
+    distanceFromColombo: '175 km (approx 3.5 hours drive)',
+    description: 'Minneriya National Park is located in the North Central Province of Sri Lanka. Built around the ancient 3rd-century Minneriya Reservoir constructed by King Mahasen, the park spans 88 square kilometers. Minneriya is world-famous for "The Gathering" — an extraordinary natural phenomenon occurring during the dry season (July to October) when over 300 wild Asian elephants assemble along the receding shores of the reservoir for fresh grass, social interaction, and water.',
+    areaKm2: '88 km²',
+    establishedYear: '1997',
+    operatingHours: '6:00 AM – 6:00 PM (Daily)',
+    gates: ['Minneriya Main Gate (Habarana - Polonnaruwa Road)'],
+    highlights: [
+      'Asia’s largest recurring gathering of wild Asian elephants',
+      'Historic 3rd-century Minneriya Tank built by King Mahasen',
+      'Spectacular avian sightings including thousands of cormorants & pelicans',
+      'Convenient central location near Cultural Triangle attractions (Sigiriya & Dambulla)'
+    ],
+    gallery: [
+      'https://images.unsplash.com/photo-1581852017103-68accd5509b6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1200&q=80'
+    ],
+    wildlifeGuide: [
+      {
+        name: 'The Great Elephant Gathering',
+        description: 'Up to 300+ elephants converging around the green grassy reservoir bed at golden hour.',
+        sightingSpot: 'Minneriya Tank Shoreline'
+      },
+      {
+        name: 'Purple-faced Langur',
+        description: 'Endemic primate species inhabiting the high forest canopy bordering the tank.',
+        sightingSpot: 'Park Entrance Forest Track'
+      },
+      {
+        name: 'Little Cormorant & Water Birds',
+        description: 'Dense colonies of water birds fishing along the shallow waters of the ancient reservoir.',
+        sightingSpot: 'Tank Marshlands'
+      }
+    ]
   }
 ];
 
