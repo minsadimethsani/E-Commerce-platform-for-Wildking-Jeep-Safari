@@ -5,6 +5,7 @@ import { SafariPackage, SAFARI_PACKAGES } from '../data/packages';
 import { createBookingInFirestore, checkVehicleSlotAvailability } from '../lib/firestore-service';
 import { useCurrency } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { validateBookingForm, getTomorrowDateString } from '../lib/validation';
 import { X, Calendar, Clock, Users, Check, Sparkles, ShieldCheck, Car, Coffee, Camera, AlertCircle, User, Mail, Phone } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
   const { formatPrice, currency: contextCurrency } = useCurrency();
   const { user, addBookingToUser } = useAuth();
+  const { showSuccess, showError, showWarning } = useToast();
   const activeCurrency = propCurrency || contextCurrency;
 
   const defaultPkg = selectedPackage || SAFARI_PACKAGES[0];
@@ -114,6 +116,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setErrors({
         auth: 'Account Sign In Required: You must be logged in to your Wildking account to reserve safari expeditions and track trip details.',
       });
+      showWarning('Account Required', 'Please sign in or create an account to complete your safari reservation.');
       return;
     }
 
@@ -128,6 +131,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
     if (!valResult.isValid) {
       setErrors(valResult.errors);
+      showWarning('Reservation Form Incomplete', 'Please select an expedition date and check passenger details.');
       return;
     }
 
@@ -146,9 +150,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       );
 
       if (!availCheck.available) {
-        setErrors({
-          conflict: availCheck.conflictMessage || `The vehicle "${selectedVehicle}" is already reserved for "${shiftTime}" on ${expeditionDate}. Please select another vehicle spec or shift time.`,
-        });
+        const msg = availCheck.conflictMessage || `The vehicle "${selectedVehicle}" is already reserved for "${shiftTime}" on ${expeditionDate}.`;
+        setErrors({ conflict: msg });
+        showError('Vehicle Slot Reserved', msg);
         setIsSubmitting(false);
         return;
       }
@@ -188,6 +192,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }
 
       setIsSuccess(true);
+      showSuccess('Safari Expedition Reserved!', `Confirmation reference ${generatedRef} has been recorded.`);
     } catch (err) {
       console.warn("Firestore booking fallback to local ref:", err);
       const ref = 'WK-' + Math.floor(100000 + Math.random() * 900000);
@@ -207,6 +212,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }
 
       setIsSuccess(true);
+      showSuccess('Safari Reservation Recorded', `Expedition confirmed with ref ${ref}.`);
     } finally {
       setIsSubmitting(false);
     }

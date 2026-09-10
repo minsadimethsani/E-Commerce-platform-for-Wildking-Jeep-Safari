@@ -288,10 +288,142 @@ export interface DatabaseUserRecord {
   name: string;
   email: string;
   phone: string;
-  passwordHash: string;
+  passwordHash?: string;
+  membershipStatus?: string;
   bookings: any[];
   createdAt: string;
   lastLoginAt: string;
+}
+
+const DEFAULT_MOCK_CUSTOMERS: DatabaseUserRecord[] = [
+  {
+    uid: "usr-alexander-wright",
+    name: "Alexander Wright",
+    email: "alexander.w@wildking-safari.com",
+    phone: "+1 (555) 234-5678",
+    membershipStatus: "VIP Member",
+    createdAt: "2026-01-15T08:30:00.000Z",
+    lastLoginAt: "2026-09-09T14:20:00.000Z",
+    bookings: [
+      {
+        id: "BK-YALA-881",
+        packageName: "Yala Block 1 Exclusive Leopard & Bear Expedition",
+        date: "2026-09-12",
+        timeSlot: "Dawn Patrol (5:30 AM)",
+        vehicle: "Land Cruiser VIP 70",
+        guests: 2,
+        totalPrice: 108000,
+        status: "Confirmed",
+      },
+    ],
+  },
+  {
+    uid: "usr-marcus-vance",
+    name: "Marcus Vance",
+    email: "marcus.vance@zurich.ch",
+    phone: "+41 79 123 4567",
+    membershipStatus: "VIP Member",
+    createdAt: "2026-03-22T10:15:00.000Z",
+    lastLoginAt: "2026-09-05T09:00:00.000Z",
+    bookings: [
+      {
+        id: "WK-BK-101",
+        packageName: "Yala Block 1 Exclusive Leopard & Bear Expedition",
+        date: "2026-09-05",
+        timeSlot: "Dawn Patrol (5:30 AM)",
+        guests: 4,
+        totalPrice: 114000,
+        status: "Confirmed",
+      },
+    ],
+  },
+  {
+    uid: "usr-elena-rostova",
+    name: "Elena Rostova",
+    email: "elena.r@gmail.com",
+    phone: "+44 7700 900077",
+    membershipStatus: "Verified Member",
+    createdAt: "2026-05-10T16:45:00.000Z",
+    lastLoginAt: "2026-09-08T11:10:00.000Z",
+    bookings: [
+      {
+        id: "WK-BK-102",
+        packageName: "Udawalawe Elephant Sanctuary & Lake Sunset",
+        date: "2026-09-08",
+        timeSlot: "Dusk Safari (2:30 PM)",
+        guests: 2,
+        totalPrice: 45000,
+        status: "Confirmed",
+      },
+    ],
+  },
+  {
+    uid: "usr-sarah-tanaka",
+    name: "Sarah Tanaka",
+    email: "sarah.t@tokyo-adventure.jp",
+    phone: "+81 90 1234 5678",
+    membershipStatus: "Verified Member",
+    createdAt: "2026-07-04T12:00:00.000Z",
+    lastLoginAt: "2026-09-01T15:30:00.000Z",
+    bookings: [],
+  },
+];
+
+export async function getRegisteredCustomersFromFirestore(): Promise<DatabaseUserRecord[]> {
+  try {
+    const localUsersMap = getLocalDbUsers();
+    const customerMap = new Map<string, DatabaseUserRecord>();
+
+    // 1. Load default mock customers
+    DEFAULT_MOCK_CUSTOMERS.forEach((c) => customerMap.set(c.email.toLowerCase(), c));
+
+    // 2. Merge local storage DB users
+    Object.values(localUsersMap).forEach((userObj: any) => {
+      if (userObj && userObj.email) {
+        const cleanEmail = userObj.email.toLowerCase();
+        const existing = customerMap.get(cleanEmail);
+        customerMap.set(cleanEmail, {
+          uid: userObj.uid || existing?.uid || `usr-${Date.now()}`,
+          name: userObj.name || existing?.name || "Member Guest",
+          email: userObj.email,
+          phone: userObj.phone || existing?.phone || "Not provided",
+          membershipStatus: existing?.membershipStatus || "Verified VIP Member",
+          createdAt: userObj.createdAt || existing?.createdAt || new Date().toISOString(),
+          lastLoginAt: userObj.lastLoginAt || existing?.lastLoginAt || new Date().toISOString(),
+          bookings: userObj.bookings || existing?.bookings || [],
+        });
+      }
+    });
+
+    // 3. Try fetching from Firestore collection 'users'
+    try {
+      const usersSnap = await getDocs(collection(db, "users"));
+      usersSnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data && data.email) {
+          const cleanEmail = data.email.toLowerCase();
+          const existing = customerMap.get(cleanEmail);
+          customerMap.set(cleanEmail, {
+            uid: docSnap.id,
+            name: data.name || data.displayName || existing?.name || "Registered Member",
+            email: data.email,
+            phone: data.phone || existing?.phone || "Not provided",
+            membershipStatus: data.membershipStatus || existing?.membershipStatus || "Verified Member",
+            createdAt: data.createdAt || existing?.createdAt || new Date().toISOString(),
+            lastLoginAt: data.lastLoginAt || existing?.lastLoginAt || new Date().toISOString(),
+            bookings: data.bookings || existing?.bookings || [],
+          });
+        }
+      });
+    } catch (fsErr) {
+      console.warn("Firestore users collection query fallback:", fsErr);
+    }
+
+    return Array.from(customerMap.values());
+  } catch (err) {
+    console.error("Error retrieving registered customer records:", err);
+    return DEFAULT_MOCK_CUSTOMERS;
+  }
 }
 
 /**

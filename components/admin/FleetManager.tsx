@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { JeepVehicleDoc } from "@/lib/types/firestore";
 import { saveVehicleInFirestore } from "@/lib/firestore-service";
+import { useToast } from "@/context/ToastContext";
 import { Truck, Plus, Edit3, X, Check, Search, ShieldCheck, Trash2, Image as ImageIcon, Star } from "lucide-react";
 
 interface FleetManagerProps {
@@ -12,6 +13,7 @@ interface FleetManagerProps {
 const DEFAULT_VEHICLE_IMAGE = "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1000";
 
 export default function FleetManager({ fleet }: FleetManagerProps) {
+  const { showSuccess, showError, showWarning } = useToast();
   const [fleetList, setFleetList] = useState<JeepVehicleDoc[]>(fleet);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -41,45 +43,54 @@ export default function FleetManager({ fleet }: FleetManagerProps) {
 
   const handleCreateVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      showWarning("Vehicle Name Required", "Please enter a valid vehicle name.");
+      return;
+    }
 
     setIsSaving(true);
-    const id = `vehicle-${Date.now()}`;
+    try {
+      const id = `vehicle-${Date.now()}`;
 
-    // Clean image array
-    const validImages = newImagesList.map((img) => img.trim()).filter(Boolean);
-    const coverPhoto = newImage.trim() || validImages[0] || DEFAULT_VEHICLE_IMAGE;
-    if (validImages.length === 0) validImages.push(coverPhoto);
+      // Clean image array
+      const validImages = newImagesList.map((img) => img.trim()).filter(Boolean);
+      const coverPhoto = newImage.trim() || validImages[0] || DEFAULT_VEHICLE_IMAGE;
+      if (validImages.length === 0) validImages.push(coverPhoto);
 
-    const newVehicleDoc: JeepVehicleDoc = {
-      id,
-      name: newName.trim(),
-      tagline: newTagline.trim() || "Heavy-Duty 4x4 Safari Land Cruiser",
-      model: newModel.trim() || "Toyota Land Cruiser HZJ79 4.2L Diesel",
-      image: coverPhoto,
-      images: validImages,
-      capacity: newCapacity.trim() || "6 Passengers",
-      features: newFeatures.split(",").map((f) => f.trim()).filter(Boolean),
-      specs: {
-        suspension: newSuspension.trim() || "Off-Road Gas Shocks",
-        seating: newSeating.trim() || "3-Tier Stadium Seating",
-        viewingAngle: newViewingAngle.trim() || "360 Degree Open View",
-        charging: newCharging.trim() || "Dual USB Ports",
-        amenities: newAmenities.trim() || "On-board Cooler Box & Binoculars",
-      },
-    };
+      const newVehicleDoc: JeepVehicleDoc = {
+        id,
+        name: newName.trim(),
+        tagline: newTagline.trim() || "Heavy-Duty 4x4 Safari Land Cruiser",
+        model: newModel.trim() || "Toyota Land Cruiser HZJ79 4.2L Diesel",
+        image: coverPhoto,
+        images: validImages,
+        capacity: newCapacity.trim() || "6 Passengers",
+        features: newFeatures.split(",").map((f) => f.trim()).filter(Boolean),
+        specs: {
+          suspension: newSuspension.trim() || "Off-Road Gas Shocks",
+          seating: newSeating.trim() || "3-Tier Stadium Seating",
+          viewingAngle: newViewingAngle.trim() || "360 Degree Open View",
+          charging: newCharging.trim() || "Dual USB Ports",
+          amenities: newAmenities.trim() || "On-board Cooler Box & Binoculars",
+        },
+      };
 
-    setFleetList((prev) => [newVehicleDoc, ...prev]);
-    await saveVehicleInFirestore(newVehicleDoc);
-    setIsSaving(false);
-    setIsAdding(false);
+      setFleetList((prev) => [newVehicleDoc, ...prev]);
+      await saveVehicleInFirestore(newVehicleDoc);
+      showSuccess("4x4 Land Cruiser Added!", `"${newVehicleDoc.name}" added to safari fleet.`);
+      setIsSaving(false);
+      setIsAdding(false);
 
-    // Reset Form
-    setNewName("");
-    setNewTagline("");
-    setNewModel("");
-    setNewImage(DEFAULT_VEHICLE_IMAGE);
-    setNewImagesList([DEFAULT_VEHICLE_IMAGE]);
+      // Reset Form
+      setNewName("");
+      setNewTagline("");
+      setNewModel("");
+      setNewImage(DEFAULT_VEHICLE_IMAGE);
+      setNewImagesList([DEFAULT_VEHICLE_IMAGE]);
+    } catch (err) {
+      showError("Fleet Addition Failed", "Unable to save vehicle specifications.");
+      setIsSaving(false);
+    }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -87,20 +98,26 @@ export default function FleetManager({ fleet }: FleetManagerProps) {
     if (!editingVehicle) return;
 
     setIsSaving(true);
-    const validImages = (editingVehicle.images || [editingVehicle.image]).map((i) => i.trim()).filter(Boolean);
-    const coverPhoto = editingVehicle.image.trim() || validImages[0] || DEFAULT_VEHICLE_IMAGE;
-    if (validImages.length === 0) validImages.push(coverPhoto);
+    try {
+      const validImages = (editingVehicle.images || [editingVehicle.image]).map((i) => i.trim()).filter(Boolean);
+      const coverPhoto = editingVehicle.image.trim() || validImages[0] || DEFAULT_VEHICLE_IMAGE;
+      if (validImages.length === 0) validImages.push(coverPhoto);
 
-    const updatedVehicle: JeepVehicleDoc = {
-      ...editingVehicle,
-      image: coverPhoto,
-      images: validImages,
-    };
+      const updatedVehicle: JeepVehicleDoc = {
+        ...editingVehicle,
+        image: coverPhoto,
+        images: validImages,
+      };
 
-    setFleetList((prev) => prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v)));
-    await saveVehicleInFirestore(updatedVehicle);
-    setIsSaving(false);
-    setEditingVehicle(null);
+      setFleetList((prev) => prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v)));
+      await saveVehicleInFirestore(updatedVehicle);
+      showSuccess("Vehicle Specifications Saved", `"${updatedVehicle.name}" updated successfully.`);
+      setIsSaving(false);
+      setEditingVehicle(null);
+    } catch (err) {
+      showError("Fleet Update Failed", "Could not update vehicle details.");
+      setIsSaving(false);
+    }
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { InquiryDoc } from "@/lib/types/firestore";
+import { useToast } from "@/context/ToastContext";
 import { MessageSquare } from "lucide-react";
 
 interface InquiriesManagerProps {
@@ -10,6 +11,7 @@ interface InquiriesManagerProps {
 }
 
 export default function InquiriesManager({ inquiries, onUpdateStatus }: InquiriesManagerProps) {
+  const { showSuccess, showError } = useToast();
   const [filter, setFilter] = useState<string>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -19,8 +21,9 @@ export default function InquiriesManager({ inquiries, onUpdateStatus }: Inquirie
     setUpdatingId(inquiryId);
     try {
       await onUpdateStatus(inquiryId, status);
+      showSuccess("Inquiry Status Updated", `Status changed to ${status.toUpperCase().replace('_', ' ')}`);
     } catch (err) {
-      alert("Failed to update inquiry status");
+      showError("Update Error", "Failed to update inquiry status.");
     } finally {
       setUpdatingId(null);
     }

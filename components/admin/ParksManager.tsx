@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ParkDestinationDoc } from "@/lib/types/firestore";
 import { saveParkInFirestore } from "@/lib/firestore-service";
+import { useToast } from "@/context/ToastContext";
 import { Trees, Plus, MapPin, Calendar, Sparkles, Edit3, X, Check, Search, Info, Trash2, Image as ImageIcon, Star } from "lucide-react";
 
 interface ParksManagerProps {
@@ -12,6 +13,7 @@ interface ParksManagerProps {
 const DEFAULT_PARK_IMAGE = "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=1000";
 
 export default function ParksManager({ destinations }: ParksManagerProps) {
+  const { showSuccess, showError, showWarning } = useToast();
   const [parksList, setParksList] = useState<ParkDestinationDoc[]>(destinations);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -37,40 +39,49 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
 
   const handleCreatePark = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      showWarning("Park Name Required", "Please enter a valid park destination name.");
+      return;
+    }
 
     setIsSaving(true);
-    const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const id = slug || `park-${Date.now()}`;
+    try {
+      const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const id = slug || `park-${Date.now()}`;
 
-    // Clean image gallery
-    const validGallery = newImagesList.map((img) => img.trim()).filter(Boolean);
-    const coverPhoto = newImage.trim() || validGallery[0] || DEFAULT_PARK_IMAGE;
-    if (validGallery.length === 0) validGallery.push(coverPhoto);
+      // Clean image gallery
+      const validGallery = newImagesList.map((img) => img.trim()).filter(Boolean);
+      const coverPhoto = newImage.trim() || validGallery[0] || DEFAULT_PARK_IMAGE;
+      if (validGallery.length === 0) validGallery.push(coverPhoto);
 
-    const newParkDoc: ParkDestinationDoc = {
-      id,
-      slug,
-      name: newName.trim(),
-      tagline: newTagline.trim() || "Breathtaking Wildlife Sanctuary",
-      image: coverPhoto,
-      gallery: validGallery,
-      primarySpecies: newPrimarySpecies.split(",").map((s) => s.trim()).filter(Boolean),
-      bestSeason: newBestSeason.trim() || "Year-round",
-      keyFact: newKeyFact.trim() || "Protected biodiversity hotspot",
-      distanceFromColombo: newDistance.trim() || "Approx 250 km from Colombo",
-    };
+      const newParkDoc: ParkDestinationDoc = {
+        id,
+        slug,
+        name: newName.trim(),
+        tagline: newTagline.trim() || "Breathtaking Wildlife Sanctuary",
+        image: coverPhoto,
+        gallery: validGallery,
+        primarySpecies: newPrimarySpecies.split(",").map((s) => s.trim()).filter(Boolean),
+        bestSeason: newBestSeason.trim() || "Year-round",
+        keyFact: newKeyFact.trim() || "Protected biodiversity hotspot",
+        distanceFromColombo: newDistance.trim() || "Approx 250 km from Colombo",
+      };
 
-    setParksList((prev) => [newParkDoc, ...prev]);
-    await saveParkInFirestore(newParkDoc);
-    setIsSaving(false);
-    setIsAdding(false);
+      setParksList((prev) => [newParkDoc, ...prev]);
+      await saveParkInFirestore(newParkDoc);
+      showSuccess("National Park Created!", `"${newParkDoc.name}" added to destinations.`);
+      setIsSaving(false);
+      setIsAdding(false);
 
-    // Reset Form
-    setNewName("");
-    setNewTagline("");
-    setNewImage(DEFAULT_PARK_IMAGE);
-    setNewImagesList([DEFAULT_PARK_IMAGE]);
+      // Reset Form
+      setNewName("");
+      setNewTagline("");
+      setNewImage(DEFAULT_PARK_IMAGE);
+      setNewImagesList([DEFAULT_PARK_IMAGE]);
+    } catch (err) {
+      showError("Park Creation Failed", "Could not save National Park details.");
+      setIsSaving(false);
+    }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -78,20 +89,26 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
     if (!editingPark) return;
 
     setIsSaving(true);
-    const validGallery = (editingPark.gallery || [editingPark.image]).map((img) => img.trim()).filter(Boolean);
-    const coverPhoto = editingPark.image.trim() || validGallery[0] || DEFAULT_PARK_IMAGE;
-    if (validGallery.length === 0) validGallery.push(coverPhoto);
+    try {
+      const validGallery = (editingPark.gallery || [editingPark.image]).map((img) => img.trim()).filter(Boolean);
+      const coverPhoto = editingPark.image.trim() || validGallery[0] || DEFAULT_PARK_IMAGE;
+      if (validGallery.length === 0) validGallery.push(coverPhoto);
 
-    const updatedParkDoc: ParkDestinationDoc = {
-      ...editingPark,
-      image: coverPhoto,
-      gallery: validGallery,
-    };
+      const updatedParkDoc: ParkDestinationDoc = {
+        ...editingPark,
+        image: coverPhoto,
+        gallery: validGallery,
+      };
 
-    setParksList((prev) => prev.map((p) => (p.id === updatedParkDoc.id ? updatedParkDoc : p)));
-    await saveParkInFirestore(updatedParkDoc);
-    setIsSaving(false);
-    setEditingPark(null);
+      setParksList((prev) => prev.map((p) => (p.id === updatedParkDoc.id ? updatedParkDoc : p)));
+      await saveParkInFirestore(updatedParkDoc);
+      showSuccess("Park Details Saved", `"${updatedParkDoc.name}" updated successfully.`);
+      setIsSaving(false);
+      setEditingPark(null);
+    } catch (err) {
+      showError("Park Update Failed", "Unable to update destination details.");
+      setIsSaving(false);
+    }
   };
 
   return (

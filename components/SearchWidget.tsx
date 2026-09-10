@@ -4,11 +4,14 @@ import React, { useState } from 'react';
 import { Calendar, Users, MapPin, Clock, Search, Sparkles } from 'lucide-react';
 import { getTomorrowDateString } from '../lib/validation';
 
+import { useToast } from '../context/ToastContext';
+
 interface SearchWidgetProps {
   onSearch: (filter: { park: string; date: string; timeSlot: string; guests: number }) => void;
 }
 
 export const SearchWidget: React.FC<SearchWidgetProps> = ({ onSearch }) => {
+  const { showInfo } = useToast();
   const [selectedPark, setSelectedPark] = useState('all');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedShift, setSelectedShift] = useState('all');
@@ -16,6 +19,8 @@ export const SearchWidget: React.FC<SearchWidgetProps> = ({ onSearch }) => {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const parkLabel = selectedPark === 'all' ? 'All Parks' : selectedPark.toUpperCase();
+    showInfo('Searching Safari Permits', `Filtering 4x4 safaris for ${parkLabel} (${guestCount} Guests)`);
     onSearch({
       park: selectedPark,
       date: selectedDate,

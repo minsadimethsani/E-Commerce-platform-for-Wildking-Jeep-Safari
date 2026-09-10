@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { loginAdmin, isAdminAuthenticated, DEFAULT_ADMIN_CREDENTIALS } from "@/lib/admin-auth";
-import { Compass, Key, AlertTriangle } from "lucide-react";
+import { loginAdmin, isAdminAuthenticated, DEFAULT_ADMIN_CREDENTIALS, PRESET_STAFF_ACCOUNTS, ROLE_LABELS } from "@/lib/admin-auth";
+import { useToast } from "@/context/ToastContext";
+import { Compass, Key, AlertTriangle, ShieldCheck } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { showSuccess, showError, showInfo } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,17 +32,25 @@ export default function AdminLoginPage() {
       setIsLoading(false);
 
       if (res.success) {
+        showSuccess("Admin Access Granted", `Welcome to Wildking Portal! Role: ${ROLE_LABELS[res.user?.role || 'super_admin']}`);
         router.push("/admin");
       } else {
-        setError(res.error || "Authentication failed.");
+        const errMsg = res.error || "Authentication failed.";
+        setError(errMsg);
+        showError("Admin Sign In Failed", errMsg);
       }
     }, 400);
   };
 
-  const handleFillDemoCredentials = () => {
-    setEmail(DEFAULT_ADMIN_CREDENTIALS.email);
-    setPassword(DEFAULT_ADMIN_CREDENTIALS.password);
-    setError(null);
+  const handleSelectPresetRole = (index: number) => {
+    setSelectedRoleIndex(index);
+    const target = PRESET_STAFF_ACCOUNTS[index];
+    if (target) {
+      setEmail(target.email);
+      setPassword(target.password);
+      setError(null);
+      showInfo("Role Selected", `Auto-filled credentials for ${ROLE_LABELS[target.role]}`);
+    }
   };
 
   return (
@@ -64,23 +75,36 @@ export default function AdminLoginPage() {
 
         {/* Login Card */}
         <div className="bg-slate-900/90 border border-emerald-800/50 rounded-3xl p-8 shadow-2xl backdrop-blur-xl space-y-6">
-          {/* Default Admin Quick-Fill Banner */}
-          <div className="bg-emerald-950/80 border border-emerald-700/60 p-4 rounded-2xl space-y-2 text-xs">
+          {/* Admin Role Quick-Fill & Demo Selector */}
+          <div className="bg-emerald-950/80 border border-emerald-700/60 p-4 rounded-2xl space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-extrabold text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-amber-400" /> Default Admin Credentials
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Staff Role Quick-Fill
               </span>
               <button
                 type="button"
-                onClick={handleFillDemoCredentials}
+                onClick={() => handleSelectPresetRole(selectedRoleIndex)}
                 className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-[10px] transition-all cursor-pointer"
               >
-                Auto Fill
+                Auto Fill Credentials
               </button>
             </div>
-            <div className="text-slate-300 font-mono text-[11px] space-y-0.5">
-              <p><span className="text-slate-400">Username:</span> {DEFAULT_ADMIN_CREDENTIALS.email}</p>
-              <p><span className="text-slate-400">Password:</span> {DEFAULT_ADMIN_CREDENTIALS.password}</p>
+
+            <select
+              value={selectedRoleIndex}
+              onChange={(e) => handleSelectPresetRole(Number(e.target.value))}
+              className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-emerald-700/80 text-amber-300 font-bold text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              {PRESET_STAFF_ACCOUNTS.map((acc, idx) => (
+                <option key={acc.email} value={idx}>
+                  {acc.name} ({ROLE_LABELS[acc.role]})
+                </option>
+              ))}
+            </select>
+
+            <div className="text-slate-300 font-mono text-[11px] space-y-0.5 pt-1 border-t border-emerald-900">
+              <p><span className="text-slate-400">Selected Email:</span> {PRESET_STAFF_ACCOUNTS[selectedRoleIndex]?.email}</p>
+              <p><span className="text-slate-400">Password:</span> {PRESET_STAFF_ACCOUNTS[selectedRoleIndex]?.password}</p>
             </div>
           </div>
 

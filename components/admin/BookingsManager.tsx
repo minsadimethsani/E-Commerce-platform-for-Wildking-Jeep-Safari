@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { BookingDoc } from "@/lib/types/firestore";
+import { useToast } from "@/context/ToastContext";
 import { Calendar, X } from "lucide-react";
 
 interface BookingsManagerProps {
@@ -10,6 +11,7 @@ interface BookingsManagerProps {
 }
 
 export default function BookingsManager({ bookings, onUpdateStatus }: BookingsManagerProps) {
+  const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingDoc | null>(null);
@@ -33,8 +35,9 @@ export default function BookingsManager({ bookings, onUpdateStatus }: BookingsMa
       if (selectedBooking && selectedBooking.id === bookingId) {
         setSelectedBooking({ ...selectedBooking, status });
       }
+      showSuccess("Booking Status Updated", `Reservation status changed to ${status.toUpperCase()}`);
     } catch (err) {
-      alert("Failed to update booking status");
+      showError("Status Update Error", "Failed to update booking status in database.");
     } finally {
       setUpdatingId(null);
     }

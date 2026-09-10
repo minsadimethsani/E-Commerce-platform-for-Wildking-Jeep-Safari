@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { logoutAdmin, getAdminSession } from "@/lib/admin-auth";
+import { logoutAdmin, getAdminSession, hasPermission, ROLE_LABELS } from "@/lib/admin-auth";
 import {
   BarChart3,
   Calendar,
@@ -12,11 +12,13 @@ import {
   Trees,
   Truck,
   Star,
+  Users,
+  ShieldCheck,
   Globe,
   LogOut,
 } from "lucide-react";
 
-export type AdminTab = "overview" | "bookings" | "inquiries" | "packages" | "parks" | "fleet" | "reviews";
+export type AdminTab = "overview" | "bookings" | "inquiries" | "packages" | "parks" | "fleet" | "reviews" | "customers" | "roles";
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -33,21 +35,27 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const router = useRouter();
   const session = getAdminSession();
+  const userRole = session?.role || "super_admin";
 
   const handleLogout = () => {
     logoutAdmin();
     router.push("/admin/login");
   };
 
-  const navItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const allNavItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "overview", label: "Overview Stats", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "bookings", label: "Safari Bookings", icon: <Calendar className="w-4 h-4" />, badge: pendingBookingsCount },
     { id: "inquiries", label: "Customer Inquiries", icon: <MessageSquare className="w-4 h-4" />, badge: newInquiriesCount },
+    { id: "customers", label: "Customer Accounts", icon: <Users className="w-4 h-4" /> },
     { id: "packages", label: "Safari Packages", icon: <Compass className="w-4 h-4" /> },
     { id: "parks", label: "Safari Parks", icon: <Trees className="w-4 h-4" /> },
     { id: "fleet", label: "Jeep Fleet", icon: <Truck className="w-4 h-4" /> },
     { id: "reviews", label: "Customer Reviews", icon: <Star className="w-4 h-4" /> },
+    { id: "roles", label: "Roles & Access", icon: <ShieldCheck className="w-4 h-4" /> },
   ];
+
+  // Filter navigation tabs based on logged-in user's role permissions
+  const navItems = allNavItems.filter((item) => hasPermission(userRole, item.id));
 
   return (
     <aside className="w-full md:w-64 md:min-w-[16rem] md:max-w-[16rem] shrink-0 bg-emerald-950/90 text-white border-r border-emerald-800/40 flex flex-col justify-between p-4 min-h-[calc(100vh-4rem)] md:min-h-screen font-sans">
@@ -61,6 +69,12 @@ export default function AdminSidebar({
             <h2 className="font-extrabold tracking-wide text-amber-400 text-lg uppercase truncate">Wildking</h2>
             <p className="text-xs text-emerald-300/80 font-medium truncate">Admin Control Panel</p>
           </div>
+        </div>
+
+        {/* Role Badge Indicator */}
+        <div className="mb-4 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-extrabold flex items-center gap-1.5 uppercase tracking-wider">
+          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="truncate">{ROLE_LABELS[userRole] || "Super Admin"}</span>
         </div>
 
         {/* Navigation Links */}

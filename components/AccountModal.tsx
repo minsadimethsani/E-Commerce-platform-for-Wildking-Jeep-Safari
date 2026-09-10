@@ -19,6 +19,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuth, UserProfile } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { validateEmail, validatePassword, validateName, validatePhone, validateConfirmPassword } from '../lib/validation';
 
 export type { UserProfile };
@@ -37,7 +38,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onClose,
   onOpenBooking
 }) => {
-  const { user: authUser, login, register, logout } = useAuth();
+  const { user: authUser, login, register, logout: authLogout } = useAuth();
+  const { showSuccess, showError, showWarning, showInfo } = useToast();
   const user = authUser;
 
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
@@ -70,6 +72,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     onClose();
   };
 
+  const handleLogout = () => {
+    authLogout();
+    showInfo('Signed Out', 'You have been logged out of your member portal.');
+  };
+
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginErrors({});
@@ -84,6 +91,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
     if (Object.keys(errors).length > 0) {
       setLoginErrors(errors);
+      showWarning('Form Validation Error', 'Please correct your login credentials.');
       return;
     }
 
@@ -92,6 +100,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       const res = await login(email, password);
       if (!res.success) {
         setLoginBannerError(res.error || 'Invalid credentials.');
+        showError('Sign In Failed', res.error || 'Invalid email or password.');
+      } else {
+        showSuccess('Welcome Back!', `Successfully signed in as ${email}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -121,6 +132,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
     if (Object.keys(errors).length > 0) {
       setRegErrors(errors);
+      showWarning('Form Validation Error', 'Please check the registration fields below.');
       return;
     }
 
@@ -129,9 +141,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       const res = await register(regName, regEmail, regPhone, regPassword);
       if (!res.success) {
         setRegBannerError(res.error || 'Failed to register account.');
+        showError('Registration Failed', res.error || 'Could not create account.');
       } else {
         setRegisteredName(regName);
         setShowRegSuccess(true);
+        showSuccess('Account Created!', `Welcome to Wildking Safari, ${regName}!`);
         setRegName('');
         setRegEmail('');
         setRegPhone('');
@@ -140,6 +154,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       }
     } catch (err) {
       setRegBannerError('Failed to create account. Please try again.');
+      showError('Registration Error', 'An unexpected error occurred during account creation.');
     } finally {
       setIsSubmitting(false);
     }
@@ -148,7 +163,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const handleDemoSignIn = async () => {
     setLoginErrors({});
     setLoginBannerError(null);
-    await login('alexander.w@wildking-safari.com', 'SafariPass123#');
+    setIsSubmitting(true);
+    try {
+      const res = await login('alexander.w@wildking-safari.com', 'SafariPass123#');
+      if (res.success) {
+        showSuccess('Demo Account Active', 'Signed in as VIP Member Alexander Wright.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -206,7 +229,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 </div>
 
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
                 >
                   <LogOut className="w-3.5 h-3.5" />

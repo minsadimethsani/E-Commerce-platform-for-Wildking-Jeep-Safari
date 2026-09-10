@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ReviewDoc } from "@/lib/types/firestore";
+import { useToast } from "@/context/ToastContext";
 import { Star, Sparkles } from "lucide-react";
 
 interface ReviewsManagerProps {
@@ -9,6 +10,12 @@ interface ReviewsManagerProps {
 }
 
 export default function ReviewsManager({ reviews }: ReviewsManagerProps) {
+  const { showSuccess } = useToast();
+
+  const handleFeatureReview = (guestName: string) => {
+    showSuccess("Review Featured", `Guest testimonial by ${guestName} pinned to home page.`);
+  };
+
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
@@ -72,7 +79,10 @@ export default function ReviewsManager({ reviews }: ReviewsManagerProps) {
 
             <div className="pt-2 flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-800">
               <span className="text-emerald-400 font-bold">Approved & Published</span>
-              <button className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-semibold transition-colors cursor-pointer">
+              <button
+                onClick={() => handleFeatureReview(rev.name)}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-semibold transition-colors cursor-pointer"
+              >
                 Feature on Homepage
               </button>
             </div>

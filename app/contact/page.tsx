@@ -24,10 +24,12 @@ import {
 
 import { validateContactForm, getTomorrowDateString } from '../../lib/validation';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { createInquiryInFirestore } from '../../lib/firestore-service';
 
 export default function ContactPage() {
   const { user } = useAuth();
+  const { showSuccess, showWarning, showError } = useToast();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
   
@@ -57,19 +59,25 @@ export default function ContactPage() {
 
     if (!valResult.isValid) {
       setFormErrors(valResult.errors);
+      showWarning('Form Validation Error', 'Please complete all required fields correctly.');
       return;
     }
 
-    await createInquiryInFirestore({
-      name: fullName,
-      email,
-      phone,
-      preferredPark: parkInterest,
-      message,
-      status: 'new',
-    });
+    try {
+      await createInquiryInFirestore({
+        name: fullName,
+        email,
+        phone,
+        preferredPark: parkInterest,
+        message,
+        status: 'new',
+      });
 
-    setIsSubmitted(true);
+      setIsSubmitted(true);
+      showSuccess('Inquiry Submitted!', 'Our naturalist concierge will contact you within 2 hours.');
+    } catch (err) {
+      showError('Submission Error', 'Could not send inquiry. Please try again or WhatsApp us.');
+    }
   };
 
   const handleOpenBooking = (pkg?: SafariPackage) => {

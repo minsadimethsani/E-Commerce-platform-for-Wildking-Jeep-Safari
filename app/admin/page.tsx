@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { isAdminAuthenticated, getAdminSession } from "@/lib/admin-auth";
+import { isAdminAuthenticated, getAdminSession, hasPermission, ROLE_LABELS } from "@/lib/admin-auth";
 import {
   getPackagesFromFirestore,
   getFleetFromFirestore,
   getReviewsFromFirestore,
   getDestinationsFromFirestore,
+  getRegisteredCustomersFromFirestore,
   seedFirestoreDatabase,
+  DatabaseUserRecord,
 } from "@/lib/firestore-service";
 import { BookingDoc, InquiryDoc, SafariPackageDoc, JeepVehicleDoc, ReviewDoc, ParkDestinationDoc } from "@/lib/types/firestore";
 
@@ -20,6 +22,9 @@ import PackagesManager from "@/components/admin/PackagesManager";
 import ParksManager from "@/components/admin/ParksManager";
 import FleetManager from "@/components/admin/FleetManager";
 import ReviewsManager from "@/components/admin/ReviewsManager";
+import CustomersManager from "@/components/admin/CustomersManager";
+import RolesManager from "@/components/admin/RolesManager";
+import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 const MOCK_BOOKINGS: BookingDoc[] = [
   {
@@ -107,6 +112,7 @@ export default function AdminPage() {
   const [destinations, setDestinations] = useState<ParkDestinationDoc[]>([]);
   const [fleet, setFleet] = useState<JeepVehicleDoc[]>([]);
   const [reviews, setReviews] = useState<ReviewDoc[]>([]);
+  const [customers, setCustomers] = useState<DatabaseUserRecord[]>([]);
 
   useEffect(() => {
     if (!isAdminAuthenticated()) {
@@ -119,7 +125,7 @@ export default function AdminPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab") as AdminTab | null;
-      if (tabParam && ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews"].includes(tabParam)) {
+      if (tabParam && ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews", "customers", "roles"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
     }
@@ -127,16 +133,18 @@ export default function AdminPage() {
     const loadAdminData = async () => {
       setIsLoading(true);
       try {
-        const [pkgs, vhcls, revs, dests] = await Promise.all([
+        const [pkgs, vhcls, revs, dests, custs] = await Promise.all([
           getPackagesFromFirestore(),
           getFleetFromFirestore(),
           getReviewsFromFirestore(),
           getDestinationsFromFirestore(),
+          getRegisteredCustomersFromFirestore(),
         ]);
         setPackages(pkgs);
         setFleet(vhcls);
         setReviews(revs);
         setDestinations(dests);
+        setCustomers(custs);
       } catch (err) {
         console.error("Error loading admin data from Firestore:", err);
       } finally {
@@ -163,22 +171,27 @@ export default function AdminPage() {
     setIsSeeding(true);
     try {
       await seedFirestoreDatabase();
-      const [pkgs, vhcls, revs, dests] = await Promise.all([
+      const [pkgs, vhcls, revs, dests, custs] = await Promise.all([
         getPackagesFromFirestore(),
         getFleetFromFirestore(),
         getReviewsFromFirestore(),
         getDestinationsFromFirestore(),
+        getRegisteredCustomersFromFirestore(),
       ]);
       setPackages(pkgs);
       setFleet(vhcls);
       setReviews(revs);
       setDestinations(dests);
+      setCustomers(custs);
     } finally {
       setIsSeeding(false);
     }
   };
 
   const session = getAdminSession();
+  const currentRole = session?.role || "super_admin";
+  const isTabAllowed = hasPermission(currentRole, activeTab);
+
   const pendingBookingsCount = bookings.filter((b) => b.status === "pending").length;
   const newInquiriesCount = inquiries.filter((i) => i.status === "new").length;
 
@@ -205,45 +218,79 @@ export default function AdminPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-4 md:p-8 space-y-6 overflow-y-auto max-h-screen">
-        {/* Tab Views */}
-        {activeTab === "overview" && (
-          <OverviewStats
-            bookings={bookings}
-            inquiries={inquiries}
-            onTriggerSeed={handleTriggerSeed}
-            isSeeding={isSeeding}
-            setActiveTab={(tab) => setActiveTab(tab)}
-          />
-        )}
+        {/* Role Access Enforcement */}
+        {!isTabAllowed ? (
+          <div className="p-8 bg-slate-900/90 border-2 border-rose-500/50 rounded-3xl text-center space-y-4 shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/40">
+              <ShieldAlert className="w-8 h-8 stroke-[2.5]" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-white font-serif uppercase tracking-wide">
+                Role Access Restricted
+              </h2>
+              <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                Your admin account role (<span className="font-bold text-amber-400">{ROLE_LABELS[currentRole]}</span>) does not have permission to view the <span className="font-bold text-white uppercase">{activeTab}</span> section.
+              </p>
+            </div>
 
-        {activeTab === "bookings" && (
-          <BookingsManager
-            bookings={bookings}
-            onUpdateStatus={handleUpdateBookingStatus}
-          />
-        )}
+            <button
+              onClick={() => setActiveTab("overview")}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 stroke-[3]" />
+              <span>Return to Overview Dashboard</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === "overview" && (
+              <OverviewStats
+                bookings={bookings}
+                inquiries={inquiries}
+                onTriggerSeed={handleTriggerSeed}
+                isSeeding={isSeeding}
+                setActiveTab={(tab) => setActiveTab(tab)}
+              />
+            )}
 
-        {activeTab === "inquiries" && (
-          <InquiriesManager
-            inquiries={inquiries}
-            onUpdateStatus={handleUpdateInquiryStatus}
-          />
-        )}
+            {activeTab === "bookings" && (
+              <BookingsManager
+                bookings={bookings}
+                onUpdateStatus={handleUpdateBookingStatus}
+              />
+            )}
 
-        {activeTab === "packages" && (
-          <PackagesManager packages={packages} />
-        )}
+            {activeTab === "inquiries" && (
+              <InquiriesManager
+                inquiries={inquiries}
+                onUpdateStatus={handleUpdateInquiryStatus}
+              />
+            )}
 
-        {activeTab === "parks" && (
-          <ParksManager destinations={destinations} />
-        )}
+            {activeTab === "customers" && (
+              <CustomersManager customers={customers} />
+            )}
 
-        {activeTab === "fleet" && (
-          <FleetManager fleet={fleet} />
-        )}
+            {activeTab === "packages" && (
+              <PackagesManager packages={packages} />
+            )}
 
-        {activeTab === "reviews" && (
-          <ReviewsManager reviews={reviews} />
+            {activeTab === "parks" && (
+              <ParksManager destinations={destinations} />
+            )}
+
+            {activeTab === "fleet" && (
+              <FleetManager fleet={fleet} />
+            )}
+
+            {activeTab === "reviews" && (
+              <ReviewsManager reviews={reviews} />
+            )}
+
+            {activeTab === "roles" && (
+              <RolesManager currentRole={currentRole} />
+            )}
+          </>
         )}
       </main>
     </div>

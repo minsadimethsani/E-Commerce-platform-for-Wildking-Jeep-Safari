@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SafariPackageDoc, ParkType, TimeSlotType } from "@/lib/types/firestore";
 import { savePackageInFirestore } from "@/lib/firestore-service";
+import { useToast } from "@/context/ToastContext";
 import { Plus, Clock, Users, MapPin, Sparkles, X, Check, Compass, ChevronRight } from "lucide-react";
 
 interface PackagesManagerProps {
@@ -21,6 +22,7 @@ const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1516426122078-c23e76319
 
 export default function PackagesManager({ packages }: PackagesManagerProps) {
   const router = useRouter();
+  const { showSuccess, showError, showWarning } = useToast();
   const [pkgList, setPkgList] = useState<SafariPackageDoc[]>(packages);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -44,39 +46,48 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
 
   const handleCreatePackage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim()) {
+      showWarning("Package Title Required", "Please enter a valid package title.");
+      return;
+    }
 
     setIsSaving(true);
-    const newId = `pkg-${Date.now()}`;
-    const newPackage: SafariPackageDoc = {
-      id: newId,
-      title: newTitle.trim(),
-      park: newPark,
-      parkName: PARK_NAME_MAP[newPark] || "Sri Lanka National Park",
-      tagline: newTagline.trim() || "Exclusive Wilderness Safari",
-      duration: newDuration,
-      timeSlot: newTimeSlot,
-      priceUsd: Number(newPriceUsd) || 0,
-      priceEur: Number(newPriceEur) || 0,
-      priceLkr: Number(newPriceLkr) || 0,
-      rating: 5.0,
-      reviewsCount: 1,
-      sightingsRate: newSightingsRate.trim() || "95% Sighting Rate",
-      badge: newBadge.trim() || undefined,
-      image: newImage.trim() || DEFAULT_IMAGE,
-      description: newDescription.trim() || "Unforgettable luxury 4x4 safari expedition with master wildlife trackers.",
-      highlights: newHighlights.split(",").map((s) => s.trim()).filter(Boolean),
-      inclusions: newInclusions.split(",").map((s) => s.trim()).filter(Boolean),
-      maxGuests: Number(newMaxGuests) || 6,
-    };
+    try {
+      const newId = `pkg-${Date.now()}`;
+      const newPackage: SafariPackageDoc = {
+        id: newId,
+        title: newTitle.trim(),
+        park: newPark,
+        parkName: PARK_NAME_MAP[newPark] || "Sri Lanka National Park",
+        tagline: newTagline.trim() || "Exclusive Wilderness Safari",
+        duration: newDuration,
+        timeSlot: newTimeSlot,
+        priceUsd: Number(newPriceUsd) || 0,
+        priceEur: Number(newPriceEur) || 0,
+        priceLkr: Number(newPriceLkr) || 0,
+        rating: 5.0,
+        reviewsCount: 1,
+        sightingsRate: newSightingsRate.trim() || "95% Sighting Rate",
+        badge: newBadge.trim() || undefined,
+        image: newImage.trim() || DEFAULT_IMAGE,
+        description: newDescription.trim() || "Unforgettable luxury 4x4 safari expedition with master wildlife trackers.",
+        highlights: newHighlights.split(",").map((s) => s.trim()).filter(Boolean),
+        inclusions: newInclusions.split(",").map((s) => s.trim()).filter(Boolean),
+        maxGuests: Number(newMaxGuests) || 6,
+      };
 
-    setPkgList((prev) => [newPackage, ...prev]);
-    await savePackageInFirestore(newPackage);
-    setIsSaving(false);
-    setIsAdding(false);
+      setPkgList((prev) => [newPackage, ...prev]);
+      await savePackageInFirestore(newPackage);
+      showSuccess("Safari Package Created!", `"${newPackage.title}" published successfully.`);
+      setIsSaving(false);
+      setIsAdding(false);
 
-    // Redirect to the newly created single package page
-    router.push(`/admin/packages/${newPackage.id}`);
+      // Redirect to the newly created single package page
+      router.push(`/admin/packages/${newPackage.id}`);
+    } catch (err) {
+      showError("Failed to Create Package", "An error occurred while saving the safari package.");
+      setIsSaving(false);
+    }
   };
 
   return (
