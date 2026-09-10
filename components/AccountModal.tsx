@@ -156,7 +156,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       {/* Dark Frosted Glass Overlay */}
       <div 
         className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity" 
-        onClick={onClose} 
+        onClick={handleCloseModal} 
       />
 
       {/* Main Modal Dialog Box */}
@@ -179,7 +179,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
@@ -568,9 +568,17 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
                   <button
                     type="submit"
-                    className="btn-golden-glow w-full py-3 rounded-xl font-extrabold uppercase text-xs tracking-wider text-slate-950 shadow-lg mt-2"
+                    disabled={isSubmitting}
+                    className="btn-golden-glow w-full py-3 rounded-xl font-extrabold uppercase text-xs tracking-wider text-slate-950 shadow-lg mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Account & Continue
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                        <span>Creating Account...</span>
+                      </>
+                    ) : (
+                      <span>Create Account & Continue</span>
+                    )}
                   </button>
                 </form>
               )}
@@ -579,6 +587,67 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         </div>
 
       </div>
+
+      {/* Account Created Success Popup Modal */}
+      {showRegSuccess && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-[#0b1320] border-2 border-emerald-500/50 rounded-3xl p-6 sm:p-8 text-center shadow-2xl shadow-emerald-950/60 transform animate-in zoom-in-95 duration-200 text-white">
+            
+            <button
+              onClick={() => setShowRegSuccess(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Glowing Icon Badge */}
+            <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-4 animate-bounce">
+              <CheckCircle2 className="w-10 h-10 text-slate-950 stroke-[2.5]" />
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-wide font-serif mb-2">
+              Account Created!
+            </h3>
+            
+            <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+              Welcome to Wildking Safari, <span className="font-bold text-amber-400">{registeredName || user?.name}</span>! Your expedition account has been created successfully.
+            </p>
+
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/20 text-left text-xs space-y-2 mb-6">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                <span className="text-slate-400">Account Status</span>
+                <span className="font-bold text-emerald-400 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Active VIP Member
+                </span>
+              </div>
+              {user?.email && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Email</span>
+                  <span className="font-semibold text-slate-200 truncate max-w-[200px]">{user.email}</span>
+                </div>
+              )}
+              {user?.phone && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Phone</span>
+                  <span className="font-semibold text-slate-200">{user.phone}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium mb-6 flex items-center gap-2 text-left">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Priority Land Cruiser booking & naturalist concierge unlocked!</span>
+            </div>
+
+            <button
+              onClick={() => setShowRegSuccess(false)}
+              className="btn-golden-glow w-full py-3.5 rounded-xl font-black uppercase text-xs tracking-wider text-slate-950 shadow-xl transition-all hover:scale-[1.02]"
+            >
+              Explore Member Portal
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
