@@ -22,27 +22,53 @@ import {
   HelpCircle
 } from 'lucide-react';
 
+import { validateContactForm, getTomorrowDateString } from '../../lib/validation';
+import { useAuth } from '../../context/AuthContext';
+import { createInquiryInFirestore } from '../../lib/firestore-service';
+
 export default function ContactPage() {
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'LKR'>('USD');
+  const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
   
   // Auth Account state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
 
   // Form State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [parkInterest, setParkInterest] = useState('Yala National Park');
-  const [expeditionDate, setExpeditionDate] = useState('2026-08-20');
+  const [expeditionDate, setExpeditionDate] = useState(getTomorrowDateString());
   const [message, setMessage] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email || !message) return;
+    setFormErrors({});
+
+    const valResult = validateContactForm({
+      fullName,
+      email,
+      phone,
+      message,
+    });
+
+    if (!valResult.isValid) {
+      setFormErrors(valResult.errors);
+      return;
+    }
+
+    await createInquiryInFirestore({
+      name: fullName,
+      email,
+      phone,
+      preferredPark: parkInterest,
+      message,
+      status: 'new',
+    });
+
     setIsSubmitted(true);
   };
 
@@ -55,8 +81,6 @@ export default function ContactPage() {
     <main className="min-h-screen flex flex-col bg-[#050b14] text-white">
       {/* Navigation Header */}
       <Navbar
-        currency={currency}
-        onCurrencyChange={(curr) => setCurrency(curr)}
         onOpenBooking={() => handleOpenBooking()}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
@@ -217,12 +241,17 @@ export default function ContactPage() {
                     </label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. Eleanor Vance"
                       value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                      onChange={(e) => {
+                        setFullName(e.target.value);
+                        if (formErrors.fullName) setFormErrors((prev) => ({ ...prev, fullName: '' }));
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                        formErrors.fullName ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700/80 focus:border-amber-400'
+                      }`}
                     />
+                    {formErrors.fullName && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{formErrors.fullName}</p>}
                   </div>
 
                   <div>
@@ -232,12 +261,17 @@ export default function ContactPage() {
                     </label>
                     <input
                       type="email"
-                      required
                       placeholder="e.g. eleanor@example.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: '' }));
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                        formErrors.email ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700/80 focus:border-amber-400'
+                      }`}
                     />
+                    {formErrors.email && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{formErrors.email}</p>}
                   </div>
                 </div>
 
@@ -251,9 +285,15 @@ export default function ContactPage() {
                       type="tel"
                       placeholder="e.g. +44 7911 123456"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: '' }));
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                        formErrors.phone ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700/80 focus:border-amber-400'
+                      }`}
                     />
+                    {formErrors.phone && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{formErrors.phone}</p>}
                   </div>
 
                   <div>
@@ -263,9 +303,10 @@ export default function ContactPage() {
                     </label>
                     <input
                       type="date"
+                      min={getTomorrowDateString()}
                       value={expeditionDate}
                       onChange={(e) => setExpeditionDate(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-white focus:outline-none focus:border-amber-400 [color-scheme:dark]"
                     />
                   </div>
                 </div>
@@ -294,13 +335,18 @@ export default function ContactPage() {
                     Your Message / Special Requirements *
                   </label>
                   <textarea
-                    required
                     rows={4}
                     placeholder="Tell us about your group size, hotel pick-up location, photography gear, or special requests..."
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      if (formErrors.message) setFormErrors((prev) => ({ ...prev, message: '' }));
+                    }}
+                    className={`w-full px-4 py-3 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                      formErrors.message ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700/80 focus:border-amber-400'
+                    }`}
                   />
+                  {formErrors.message && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{formErrors.message}</p>}
                 </div>
 
                 <button
@@ -382,16 +428,13 @@ export default function ContactPage() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={selectedPackage}
-        currency={currency}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onLogin={(loggedInUser) => setUser(loggedInUser)}
-        onLogout={() => setUser(null)}
         onOpenBooking={() => handleOpenBooking()}
       />
     </main>

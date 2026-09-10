@@ -37,9 +37,9 @@ export const WhyUs: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-6 text-amber-400 group-hover:bg-amber-400 group-hover:text-emerald-950 transition-colors">
               <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
             </div>
-            <h3 className="text-xl font-bold text-white font-serif mb-2">100% Private 4x4 Jeeps</h3>
+            <h3 className="text-xl font-bold text-white font-serif mb-2">Passenger Safety & 4x4 Jeeps</h3>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-light">
-              No cramped shared seating with strangers. Every booking includes a private modified Toyota Land Cruiser or Defender.
+              Heavy-duty steel roll cages, 3-point individual seatbelts, certified wilderness first-aid kits, and satellite GPS emergency tracking on all private rigs.
             </p>
           </div>
 
@@ -64,6 +64,20 @@ export const WhyUs: React.FC = () => {
               We adhere strictly to park speed limits, zero plastic policies, and contribute 5% of proceeds directly to wildlife habitat protection.
             </p>
           </div>
+        </div>
+
+        {/* Highlighted Safety Standards Banner */}
+        <div className="mt-12 p-6 rounded-2xl bg-[#0a150e] border border-emerald-800/60 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-8 h-8 text-amber-400 shrink-0" />
+            <div>
+              <h4 className="text-sm font-extrabold text-white uppercase tracking-wider">Uncompromising Passenger Safety Standard</h4>
+              <p className="text-xs text-zinc-400 font-light">Every safari package includes certified roll cages, 3-point seatbelts, wilderness first aid, and direct ranger emergency satellite radio link.</p>
+            </div>
+          </div>
+          <span className="px-4 py-2 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-bold uppercase tracking-wider shrink-0">
+            DWC Certified Safety Standard
+          </span>
         </div>
       </div>
     </section>

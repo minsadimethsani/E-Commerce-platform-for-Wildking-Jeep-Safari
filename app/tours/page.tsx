@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../components/AccountModal';
 import { SAFARI_PACKAGES, SafariPackage } from '../../data/packages';
+import { useCurrency } from '../../context/CurrencyContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Star,
   Clock,
@@ -21,14 +24,18 @@ import {
   Sunset
 } from 'lucide-react';
 
-export default function ToursPage() {
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'LKR'>('USD');
+function ToursContent() {
+  const searchParams = useSearchParams();
+  const parkUrlParam = searchParams ? searchParams.get('park') : null;
+  const searchUrlParam = searchParams ? searchParams.get('search') : null;
+
+  const { formatPrice } = useCurrency();
+  const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
   
   // Auth Account state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,11 +43,15 @@ export default function ToursPage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recommended' | 'price-low' | 'price-high' | 'rating'>('recommended');
 
-  const formatPrice = (pkg: SafariPackage) => {
-    if (currency === 'EUR') return `€${pkg.priceEur}`;
-    if (currency === 'LKR') return `Rs. ${pkg.priceLkr.toLocaleString()}`;
-    return `$${pkg.priceUsd}`;
-  };
+  // Synchronize state with URL search parameters
+  useEffect(() => {
+    if (parkUrlParam) {
+      setSelectedPark(parkUrlParam.toLowerCase());
+    }
+    if (searchUrlParam) {
+      setSearchQuery(searchUrlParam);
+    }
+  }, [parkUrlParam, searchUrlParam]);
 
   const handleOpenBooking = (pkg?: SafariPackage) => {
     setSelectedPackage(pkg || SAFARI_PACKAGES[0]);
@@ -54,7 +65,7 @@ export default function ToursPage() {
       pkg.parkName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pkg.tagline.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesPark = selectedPark === 'all' || pkg.park === selectedPark;
+    const matchesPark = selectedPark === 'all' || pkg.park.toLowerCase() === selectedPark.toLowerCase();
     const matchesTimeSlot =
       selectedTimeSlot === 'all' ||
       (selectedTimeSlot === 'dawn' && pkg.timeSlot.includes('Dawn')) ||
@@ -73,26 +84,32 @@ export default function ToursPage() {
     <main className="min-h-screen flex flex-col bg-[#050b14] text-white">
       {/* Navigation Header */}
       <Navbar
-        currency={currency}
-        onCurrencyChange={(curr) => setCurrency(curr)}
         onOpenBooking={() => handleOpenBooking()}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
       />
 
-      {/* Tours Page Banner */}
-      <section className="relative pt-36 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#091120] via-[#070e1a] to-[#050b14] border-b border-amber-500/20">
-        <div className="max-w-7xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-extrabold uppercase tracking-widest">
-            <Compass className="w-4 h-4 text-amber-400" />
-            <span>WILDKING EXPEDITION CATALOG</span>
-          </div>
+      {/* Hero Section */}
+      <section className="relative pt-36 pb-20 px-4 sm:px-6 lg:px-8 border-b border-amber-500/20 overflow-hidden flex items-center justify-center">
+        {/* Hero Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/images/hero-sunset-jeep.jpg"
+            alt="Safari Packages Hero"
+            className="w-full h-full object-cover object-center filter brightness-90 contrast-105"
+          />
+          {/* Gradient Overlays for dark theme consistency & text contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050b14] via-[#050b14]/70 to-[#050b14]/80" />
+          <div className="absolute inset-0 bg-black/30" />
+        </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black font-serif uppercase tracking-tight text-white">
-            LUXURY 4x4 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">SAFARI TOURS</span>
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-7xl mx-auto text-center space-y-4">
+          <h1 className="text-4xl sm:text-6xl font-black font-serif tracking-tight text-white drop-shadow-md">
+            Safari Packages
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-200 max-w-2xl mx-auto font-light leading-relaxed drop-shadow-sm">
             Choose from private dawn game drives, sunset savanna expeditions, and full-day deep wilderness penetrations across Yala, Udawalawe, Wilpattu & Minneriya.
           </p>
         </div>
@@ -215,78 +232,56 @@ export default function ToursPage() {
               {filteredTours.map((pkg) => (
                 <div
                   key={pkg.id}
-                  className="group bg-[#0b1711] border border-emerald-900/50 rounded-none overflow-hidden hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between shadow-2xl hover:shadow-amber-500/10"
+                  className="group bg-[#08101d] border border-slate-800 rounded-none overflow-hidden hover:border-amber-500/60 transition-all duration-500 flex flex-col justify-between shadow-2xl hover:shadow-amber-500/10"
                 >
-                  {/* Image & Overlay */}
-                  <div className="relative h-48 sm:h-52 w-full overflow-hidden">
+                  {/* Image Header - Clean without text/badge overlays */}
+                  <a href={`/safari?id=${pkg.id}`} className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950 block group">
                     <img
                       src={pkg.image}
                       alt={pkg.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b1711] via-transparent to-black/40" />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                  </a>
 
-                    {/* Top Badge */}
-                    {pkg.badge && (
-                      <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-none bg-amber-400 text-emerald-950 text-[10px] font-extrabold uppercase tracking-wider shadow-lg">
-                        {pkg.badge}
+                  {/* Card Body - Package Title, Description, Duration/Time Period, Price & Book Now CTA */}
+                  <div className="p-5 bg-[#08101d] flex flex-col justify-between space-y-3.5 flex-1">
+                    <div className="space-y-2">
+                      {/* Package Title */}
+                      <a href={`/safari?id=${pkg.id}`} className="block group-hover:text-amber-400 transition-colors">
+                        <h3 className="text-sm font-black text-white font-serif uppercase tracking-wider line-clamp-2 min-h-[2.5rem]">
+                          {pkg.title}
+                        </h3>
+                      </a>
+
+                      {/* Description */}
+                      <p className="text-[11px] text-slate-300 font-light leading-relaxed line-clamp-2 min-h-[2rem]">
+                        {pkg.description || pkg.tagline}
+                      </p>
+
+                      {/* Time Period / Duration */}
+                      <div className="flex items-center gap-1.5 pt-1 text-[11px] text-amber-300 font-medium">
+                        <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
                       </div>
-                    )}
-
-                    {/* Sightings Guarantee Badge */}
-                    <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-none bg-emerald-950/80 border border-emerald-500/40 backdrop-blur-md text-amber-300 text-[10px] font-semibold">
-                      {pkg.sightingsRate}
                     </div>
 
-                    {/* Duration & Park Pill */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-zinc-200">
-                      <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-none border border-white/10 truncate max-w-[55%]">
-                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
-                        <span className="truncate">{pkg.parkName}</span>
-                      </div>
-                      <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-none border border-white/10 shrink-0">
-                        <Clock className="w-3 h-3 text-amber-400 shrink-0" />
-                        <span>{pkg.duration}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      {/* Rating & Review Count */}
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <div className="flex items-center text-amber-400">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span className="ml-1 text-xs font-bold text-white">{pkg.rating}</span>
-                        </div>
-                        <span className="text-[11px] text-zinc-400">({pkg.reviewsCount})</span>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-base font-bold text-white font-serif mb-2 group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
-                        {pkg.title}
-                      </h3>
-                    </div>
-
-                    {/* Card Footer: Price & Booking Action */}
-                    <div className="pt-3 border-t border-emerald-900/40 flex items-center justify-between gap-2">
+                    {/* Price & Book Now CTA */}
+                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
                       <div>
-                        <span className="text-[9px] uppercase font-bold text-zinc-400 block tracking-wider">
-                          From
-                        </span>
-                        <div className="text-lg sm:text-xl font-extrabold text-amber-400 font-sans">
-                          {formatPrice(pkg)}
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">From</span>
+                        <div className="text-base sm:text-lg font-black text-amber-400 font-sans">
+                          {formatPrice(pkg.priceLkr)}
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleOpenBooking(pkg)}
-                        className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-bold text-[11px] uppercase tracking-wider rounded-none flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-105 transition-all shrink-0"
+                      <a
+                        href={`/safari?id=${pkg.id}`}
+                        className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1"
                       >
-                        <span>Book</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                        <span>Book Now</span>
+                        <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -305,18 +300,27 @@ export default function ToursPage() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={selectedPackage}
-        currency={currency}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onLogin={(loggedInUser) => setUser(loggedInUser)}
-        onLogout={() => setUser(null)}
         onOpenBooking={() => handleOpenBooking()}
       />
     </main>
+  );
+}
+
+export default function ToursPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#050b14] text-white flex items-center justify-center">
+        <Compass className="w-10 h-10 text-amber-400 animate-spin" />
+      </div>
+    }>
+      <ToursContent />
+    </Suspense>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Calendar, Users, MapPin, Clock, Search, Sparkles } from 'lucide-react';
+import { getTomorrowDateString } from '../lib/validation';
 
 interface SearchWidgetProps {
   onSearch: (filter: { park: string; date: string; timeSlot: string; guests: number }) => void;
@@ -58,6 +59,7 @@ export const SearchWidget: React.FC<SearchWidgetProps> = ({ onSearch }) => {
           </label>
           <input
             type="date"
+            min={getTomorrowDateString()}
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer [color-scheme:dark]"
@@ -92,16 +94,40 @@ export const SearchWidget: React.FC<SearchWidgetProps> = ({ onSearch }) => {
           <label className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
             Guests
           </label>
-          <select
-            value={guestCount}
-            onChange={(e) => setGuestCount(Number(e.target.value))}
-            className="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer [&>option]:bg-[#4a4b2f] [&>option]:text-white"
-          >
-            <option value={1}>1 Guest (Solo)</option>
-            <option value={2}>2 Guests (Couple)</option>
-            <option value={4}>4 Guests (Family)</option>
-            <option value={6}>6 Guests (Full Private Jeep)</option>
-          </select>
+          <div className="flex flex-col gap-1 w-full">
+            <select
+              value={guestCount <= 6 ? guestCount : 'custom'}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'custom') {
+                  if (guestCount <= 6) setGuestCount(7);
+                } else {
+                  setGuestCount(Number(val));
+                }
+              }}
+              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer [&>option]:bg-[#4a4b2f] [&>option]:text-white"
+            >
+              <option value={1}>1 Guest (Solo)</option>
+              <option value={2}>2 Guests (Couple)</option>
+              <option value={3}>3 Guests</option>
+              <option value={4}>4 Guests (Family)</option>
+              <option value={5}>5 Guests</option>
+              <option value={6}>6 Guests (1 Full Jeep)</option>
+              <option value="custom">More than 6 guests...</option>
+            </select>
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={guestCount || ''}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setGuestCount(isNaN(val) || val < 1 ? 1 : val);
+              }}
+              className="w-full bg-black/20 border border-white/20 rounded px-2 py-0.5 text-[11px] font-bold text-amber-300 focus:outline-none focus:border-amber-400"
+              placeholder="Or type guest count"
+            />
+          </div>
         </div>
       </div>
 

@@ -76,14 +76,13 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
 
           {/* Hero CTA Action Button */}
           <div className="pt-2 animate-slide-up-cta">
-            <button
-              type="button"
-              onClick={() => onOpenBooking?.()}
+            <a
+              href="/tours"
               className="btn-golden-glow inline-flex items-center justify-center gap-2.5 px-9 py-4 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-slate-950 rounded-full transition-all duration-300 shadow-2xl hover:scale-105 cursor-pointer"
             >
               <span>Book Now</span>
               <ArrowRight className="w-4 h-4 text-slate-950" />
-            </button>
+            </a>
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ import { AccountModal, UserProfile } from '../../../components/AccountModal';
 import { PARK_DESTINATIONS, SAFARI_PACKAGES, JEEP_FLEET, SafariPackage } from '../../../data/packages';
 import { getPackagesFromFirestore } from '../../../lib/firestore-service';
 import { SafariPackageDoc } from '../../../lib/types/firestore';
+import { useCurrency } from '../../../context/CurrencyContext';
+import { useAuth } from '../../../context/AuthContext';
 import {
   Compass,
   MapPin,
@@ -40,13 +42,13 @@ export default function ParkDetailPage() {
     (p) => p.id.toLowerCase() === parkId || p.slug.toLowerCase() === parkId
   ) || PARK_DESTINATIONS[0];
 
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'LKR'>('USD');
+  const { formatPrice } = useCurrency();
+  const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
 
   // Account Modal state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
 
   // All Safari Packages state (populated from Firestore with local fallback)
   const [allPackages, setAllPackages] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
@@ -80,12 +82,6 @@ export default function ParkDetailPage() {
     return false;
   });
 
-  const formatPrice = (pkg: SafariPackageDoc) => {
-    if (currency === 'EUR') return `€${pkg.priceEur}`;
-    if (currency === 'LKR') return `Rs. ${pkg.priceLkr.toLocaleString()}`;
-    return `$${pkg.priceUsd}`;
-  };
-
   const handleOpenBooking = (pkg?: SafariPackageDoc) => {
     setSelectedPackage((pkg as SafariPackage) || (parkPackages[0] as SafariPackage) || (SAFARI_PACKAGES[0] as SafariPackage));
     setIsBookingOpen(true);
@@ -95,8 +91,6 @@ export default function ParkDetailPage() {
     <main className="min-h-screen flex flex-col bg-[#050b14] text-white">
       {/* Navigation Header */}
       <Navbar
-        currency={currency}
-        onCurrencyChange={(curr) => setCurrency(curr)}
         onOpenBooking={() => handleOpenBooking()}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
@@ -149,9 +143,11 @@ export default function ParkDetailPage() {
                 <img
                   src={currentPark.image}
                   alt={currentPark.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.92] contrast-[1.05] saturate-[1.08] group-hover:brightness-105 group-hover:contrast-[1.1] group-hover:saturate-[1.15]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#08101d] via-black/30 to-black/20 lg:bg-gradient-to-r lg:from-transparent lg:to-[#08101d]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#08101d] via-black/30 to-black/20 lg:bg-gradient-to-r lg:from-transparent lg:to-[#08101d] pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-amber-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
 
                 {/* Floating Pills */}
                 <div className="absolute top-6 left-6 flex flex-wrap gap-2">
@@ -400,93 +396,59 @@ export default function ParkDetailPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {parkPackages.map((pkg) => (
                   <div
                     key={pkg.id}
-                    className="group bg-[#091322] border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between shadow-xl"
+                    className="group bg-[#08101d] border border-slate-800 rounded-none overflow-hidden hover:border-amber-500/60 transition-all duration-500 flex flex-col justify-between shadow-2xl hover:shadow-amber-500/10"
                   >
-                    {/* Image Header */}
-                    <div className="relative h-52 w-full overflow-hidden">
+                    {/* Image Header - Clean without text/badge overlays */}
+                    <a href={`/safari?id=${pkg.id}`} className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950 block group">
                       <img
                         src={pkg.image}
                         alt={pkg.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#091322] via-transparent to-black/40" />
+                      <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                    </a>
 
-                      {pkg.badge && (
-                        <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider">
-                          {pkg.badge}
-                        </div>
-                      )}
-
-                      <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 backdrop-blur-md text-amber-300 text-[10px] font-semibold">
-                        {pkg.sightingsRate}
-                      </div>
-
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-zinc-200">
-                        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                          <span>{pkg.duration}</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-                          <MapPin className="w-3 h-3 text-amber-400" />
-                          <span>{pkg.timeSlot.split(' ')[0]}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Content */}
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1 text-xs">
-                          <div className="flex items-center text-amber-400 font-bold">
-                            <Star className="w-3.5 h-3.5 fill-amber-400" />
-                            <span className="ml-1 text-white">{pkg.rating}</span>
-                          </div>
-                          <span className="text-slate-400">({pkg.reviewsCount} reviews)</span>
-                        </div>
-
-                        <a
-                          href={`/safari?id=${pkg.id}`}
-                          className="block text-base font-bold text-white font-serif hover:text-amber-400 transition-colors line-clamp-2"
-                        >
-                          {pkg.title}
+                    {/* Card Body - Package Title, Description, Duration/Time Period, Price & Book Now CTA */}
+                    <div className="p-5 bg-[#08101d] flex flex-col justify-between space-y-3.5 flex-1">
+                      <div className="space-y-2">
+                        {/* Package Title */}
+                        <a href={`/safari?id=${pkg.id}`} className="block group-hover:text-amber-400 transition-colors">
+                          <h3 className="text-sm font-black text-white font-serif uppercase tracking-wider line-clamp-2 min-h-[2.5rem]">
+                            {pkg.title}
+                          </h3>
                         </a>
 
-                        <p className="text-xs text-slate-400 font-light mt-1 line-clamp-2">
-                          {pkg.tagline}
+                        {/* Description */}
+                        <p className="text-[11px] text-slate-300 font-light leading-relaxed line-clamp-2 min-h-[2rem]">
+                          {pkg.description || pkg.tagline}
                         </p>
+
+                        {/* Time Period / Duration */}
+                        <div className="flex items-center gap-1.5 pt-1 text-[11px] text-amber-300 font-medium">
+                          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
+                        </div>
                       </div>
 
-                      {/* Inclusions summary */}
-                      <div className="space-y-1.5 pt-2 border-t border-slate-800/80 text-[11px]">
-                        {pkg.highlights.slice(0, 2).map((h, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-slate-300 truncate">
-                            <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                            <span className="truncate">{h}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Footer Actions */}
-                      <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                      {/* Price & Action Button */}
+                      <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
                         <div>
-                          <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
-                            From
-                          </span>
-                          <div className="text-lg font-extrabold text-amber-400 font-sans">
-                            {formatPrice(pkg)}
+                          <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">From</span>
+                          <div className="text-base sm:text-lg font-black text-amber-400 font-sans">
+                            {formatPrice(pkg.priceLkr)}
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleOpenBooking(pkg)}
-                          className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-105 transition-all"
+                          className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1"
                         >
                           <span>Book Now</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
                         </button>
                       </div>
                     </div>
@@ -536,16 +498,13 @@ export default function ParkDetailPage() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={selectedPackage}
-        currency={currency}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onLogin={(loggedInUser) => setUser(loggedInUser)}
-        onLogout={() => setUser(null)}
         onOpenBooking={() => handleOpenBooking()}
       />
     </main>

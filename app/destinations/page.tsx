@@ -6,6 +6,8 @@ import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../components/AccountModal';
 import { PARK_DESTINATIONS, SAFARI_PACKAGES, SafariPackage, ParkDestination } from '../../data/packages';
+import { useCurrency } from '../../context/CurrencyContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Compass,
   MapPin,
@@ -25,22 +27,16 @@ import {
 } from 'lucide-react';
 
 export default function DestinationsPage() {
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'LKR'>('USD');
+  const { formatPrice } = useCurrency();
+  const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
 
   // Auth Account state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
 
   // Filter state
   const [activeParkId, setActiveParkId] = useState<string>('all');
-
-  const formatPrice = (pkg: SafariPackage) => {
-    if (currency === 'EUR') return `€${pkg.priceEur}`;
-    if (currency === 'LKR') return `Rs. ${pkg.priceLkr.toLocaleString()}`;
-    return `$${pkg.priceUsd}`;
-  };
 
   const handleOpenBooking = (pkg?: SafariPackage) => {
     setSelectedPackage(pkg || SAFARI_PACKAGES[0]);
@@ -59,8 +55,6 @@ export default function DestinationsPage() {
     <main className="min-h-screen flex flex-col bg-[#050b14] text-white">
       {/* Navigation Header */}
       <Navbar
-        currency={currency}
-        onCurrencyChange={(curr) => setCurrency(curr)}
         onOpenBooking={() => handleOpenBooking()}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
@@ -141,9 +135,11 @@ export default function DestinationsPage() {
                     <img
                       src={park.image}
                       alt={park.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.92] contrast-[1.05] saturate-[1.08] group-hover:brightness-105 group-hover:contrast-[1.1] group-hover:saturate-[1.15]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#08101d] via-transparent to-black/30 lg:bg-gradient-to-r lg:from-transparent lg:to-[#08101d]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#08101d] via-transparent to-black/30 lg:bg-gradient-to-r lg:from-transparent lg:to-[#08101d] pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-amber-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
 
                     {/* Top Pill Badges */}
                     <div className="absolute top-4 left-4 flex flex-wrap gap-2">
@@ -241,35 +237,20 @@ export default function DestinationsPage() {
                           key={pkg.id}
                           className="group bg-[#091322] border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between shadow-xl"
                         >
-                          <div className="relative h-48 w-full overflow-hidden">
+                          {/* Image Header - Clean without text/badge overlays */}
+                          <a href={`/safari?id=${pkg.id}`} className="relative h-48 w-full overflow-hidden bg-slate-950 block group">
                             <img
                               src={pkg.image}
                               alt={pkg.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#091322] via-transparent to-black/40" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                          </a>
 
-                            {pkg.badge && (
-                              <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider">
-                                {pkg.badge}
-                              </div>
-                            )}
-
-                            <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 backdrop-blur-md text-amber-300 text-[10px] font-semibold">
-                              {pkg.sightingsRate}
-                            </div>
-                          </div>
-
+                          {/* Card Body - ONLY Package Title, Description, Duration/Time Period, Price & Book Now CTA */}
                           <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                            <div>
-                              <div className="flex items-center gap-1.5 mb-1 text-xs">
-                                <div className="flex items-center text-amber-400 font-bold">
-                                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                                  <span className="ml-1 text-white">{pkg.rating}</span>
-                                </div>
-                                <span className="text-slate-400">({pkg.reviewsCount} reviews)</span>
-                              </div>
-
+                            <div className="space-y-2">
+                              {/* Title */}
                               <a
                                 href={`/safari?id=${pkg.id}`}
                                 className="block text-base font-bold text-white font-serif hover:text-amber-400 transition-colors line-clamp-2"
@@ -277,24 +258,32 @@ export default function DestinationsPage() {
                                 {pkg.title}
                               </a>
 
-                              <p className="text-xs text-slate-400 font-light mt-1 line-clamp-2">
-                                {pkg.tagline}
+                              {/* Description */}
+                              <p className="text-xs text-slate-400 font-light line-clamp-2">
+                                {pkg.tagline || pkg.description}
                               </p>
+
+                              {/* Time Period / Duration */}
+                              <div className="flex items-center gap-1.5 text-[11px] text-amber-300 font-medium pt-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
+                              </div>
                             </div>
 
+                            {/* Price & Book Now CTA */}
                             <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                               <div>
                                 <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
                                   From
                                 </span>
                                 <div className="text-lg font-extrabold text-amber-400 font-sans">
-                                  {formatPrice(pkg)}
+                                  {formatPrice(pkg.priceLkr)}
                                 </div>
                               </div>
 
                               <button
                                 onClick={() => handleOpenBooking(pkg)}
-                                className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-105 transition-all"
+                                className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-105 transition-all cursor-pointer"
                               >
                                 <span>Book Now</span>
                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -367,16 +356,13 @@ export default function DestinationsPage() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={selectedPackage}
-        currency={currency}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onLogin={(loggedInUser) => setUser(loggedInUser)}
-        onLogout={() => setUser(null)}
         onOpenBooking={() => handleOpenBooking()}
       />
     </main>

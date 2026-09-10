@@ -14,114 +14,141 @@ import {
   CheckCircle2,
   Sparkles,
   ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { useAuth, UserProfile } from '../context/AuthContext';
+import { validateEmail, validatePassword, validateName, validatePhone, validateConfirmPassword } from '../lib/validation';
 
-export interface UserProfile {
-  name: string;
-  email: string;
-  phone: string;
-  avatarUrl?: string;
-  bookings: {
-    id: string;
-    packageName: string;
-    date: string;
-    guests: number;
-    totalPrice: number;
-    status: 'Confirmed' | 'Completed' | 'Pending';
-  }[];
-}
+export type { UserProfile };
 
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: UserProfile | null;
-  onLogin: (user: UserProfile) => void;
-  onLogout: () => void;
+  user?: UserProfile | null;
+  onLogin?: (user: UserProfile) => void;
+  onLogout?: () => void;
   onOpenBooking?: () => void;
 }
 
 export const AccountModal: React.FC<AccountModalProps> = ({
   isOpen,
   onClose,
-  user,
-  onLogin,
-  onLogout,
   onOpenBooking
 }) => {
+  const { user: authUser, login, register, logout } = useAuth();
+  const user = authUser;
+
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [profileTab, setProfileTab] = useState<'overview' | 'bookings'>('overview');
 
-  // Login form state
+  // Login form state & errors
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginErrors, setLoginErrors] = useState<Record<string, string>>({});
+  const [loginBannerError, setLoginBannerError] = useState<string | null>(null);
 
-  // Register form state
+  // Register form state & errors
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regErrors, setRegErrors] = useState<Record<string, string>>({});
+  const [regBannerError, setRegBannerError] = useState<string | null>(null);
+
+  // Registration success popup & loading states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRegSuccess, setShowRegSuccess] = useState(false);
+  const [registeredName, setRegisteredName] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSignInSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    
-    // Create or login user
-    onLogin({
-      name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-      email: email,
-      phone: '+94 77 987 6543',
-      bookings: [
-        {
-          id: 'WK-2026-894',
-          packageName: 'Signature Sunset Safari - Yala Sector',
-          date: '2026-08-20',
-          guests: 2,
-          totalPrice: 2500,
-          status: 'Confirmed'
-        }
-      ]
-    });
+  const handleCloseModal = () => {
+    setShowRegSuccess(false);
+    onClose();
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regEmail || !regName) return;
+    setLoginErrors({});
+    setLoginBannerError(null);
 
-    onLogin({
-      name: regName,
-      email: regEmail,
-      phone: regPhone || '+94 77 123 4567',
-      bookings: []
-    });
+    const errors: Record<string, string> = {};
+    const emailErr = validateEmail(email);
+    if (emailErr) errors.email = emailErr;
+
+    const passErr = validatePassword(password, 6);
+    if (passErr) errors.password = passErr;
+
+    if (Object.keys(errors).length > 0) {
+      setLoginErrors(errors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await login(email, password);
+      if (!res.success) {
+        setLoginBannerError(res.error || 'Invalid credentials.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDemoSignIn = () => {
-    onLogin({
-      name: 'Alexander Wright',
-      email: 'alexander.w@wildking-safari.com',
-      phone: '+1 (555) 234-5678',
-      bookings: [
-        {
-          id: 'WK-2026-102',
-          packageName: 'Yala Leopard Dawn Patrol & Sunset Expedition',
-          date: '2026-08-22',
-          guests: 2,
-          totalPrice: 2500,
-          status: 'Confirmed'
-        },
-        {
-          id: 'WK-2025-481',
-          packageName: 'Udawalawe Elephant Sanctuary VIP Safari',
-          date: '2025-11-14',
-          guests: 4,
-          totalPrice: 3920,
-          status: 'Completed'
-        }
-      ]
-    });
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegErrors({});
+    setRegBannerError(null);
+
+    const errors: Record<string, string> = {};
+    const nameErr = validateName(regName);
+    if (nameErr) errors.name = nameErr;
+
+    const emailErr = validateEmail(regEmail);
+    if (emailErr) errors.email = emailErr;
+
+    const phoneErr = validatePhone(regPhone);
+    if (phoneErr) errors.phone = phoneErr;
+
+    const passErr = validatePassword(regPassword, 6);
+    if (passErr) errors.password = passErr;
+
+    const confirmErr = validateConfirmPassword(regPassword, regConfirmPassword);
+    if (confirmErr) errors.confirmPassword = confirmErr;
+
+    if (Object.keys(errors).length > 0) {
+      setRegErrors(errors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await register(regName, regEmail, regPhone, regPassword);
+      if (!res.success) {
+        setRegBannerError(res.error || 'Failed to register account.');
+      } else {
+        setRegisteredName(regName);
+        setShowRegSuccess(true);
+        setRegName('');
+        setRegEmail('');
+        setRegPhone('');
+        setRegPassword('');
+        setRegConfirmPassword('');
+      }
+    } catch (err) {
+      setRegBannerError('Failed to create account. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDemoSignIn = async () => {
+    setLoginErrors({});
+    setLoginBannerError(null);
+    await login('alexander.w@wildking-safari.com', 'SafariPass123#');
   };
 
   return (
@@ -153,37 +180,33 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Modal Content Body */}
+        {/* Modal Body Container */}
         <div className="p-6">
           {user ? (
-            /* ================= LOGGED IN USER PROFILE ================= */
+            /* Logged In Member Profile Layout */
             <div className="space-y-6">
-              {/* User Profile Summary Card */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-amber-500/20 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black text-lg flex items-center justify-center shadow-lg border-2 border-amber-400">
-                    {user.name.charAt(0)}
+              
+              {/* Profile Card Header */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white flex items-center gap-2">
-                      {user.name}
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        VIP Member
-                      </span>
-                    </h4>
+                    <h4 className="text-base font-bold text-white font-serif">{user.name}</h4>
                     <p className="text-xs text-slate-400">{user.email}</p>
                     <p className="text-[11px] text-amber-400/90 mt-0.5">{user.phone}</p>
                   </div>
                 </div>
 
                 <button
-                  onClick={onLogout}
+                  onClick={logout}
                   className="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -211,7 +234,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  My Safaris ({user.bookings.length})
+                  My Safaris ({user.bookings ? user.bookings.length : 0})
                 </button>
               </div>
 
@@ -221,7 +244,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
                       <span className="text-slate-400 block mb-1 font-medium">Expeditions Booked</span>
-                      <span className="text-xl font-extrabold text-amber-400">{user.bookings.length} Tours</span>
+                      <span className="text-xl font-extrabold text-amber-400">{user.bookings ? user.bookings.length : 0} Tours</span>
                     </div>
                     <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
                       <span className="text-slate-400 block mb-1 font-medium">Membership Status</span>
@@ -257,7 +280,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               ) : (
                 /* Bookings Tab */
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                  {user.bookings.length === 0 ? (
+                  {(!user.bookings || user.bookings.length === 0) ? (
                     <div className="text-center py-8 text-slate-400 text-xs">
                       No safari expeditions booked yet.
                     </div>
@@ -280,22 +303,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                           </span>
                         </div>
 
-                        <h5 className="font-bold text-sm text-white">{booking.packageName}</h5>
+                        <h5 className="font-bold text-white text-sm font-serif line-clamp-1">
+                          {booking.packageName}
+                        </h5>
 
-                        <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300 pt-1 border-t border-slate-800/60">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Date: {booking.date}</span>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1 text-slate-300">
+                              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                              {booking.date}
+                            </span>
+                            <span>{booking.guests} Guests</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Ticket className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Guests: {booking.guests} People</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs pt-1">
-                          <span className="text-slate-400">Total Paid</span>
-                          <span className="font-extrabold text-amber-300 text-sm">${booking.totalPrice} USD</span>
                         </div>
                       </div>
                     ))
@@ -304,22 +323,31 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               )}
             </div>
           ) : (
-            /* ================= NOT LOGGED IN (SIGN IN / REGISTER) ================= */
-            <div className="space-y-5">
-              {/* Tab Selector */}
+            /* Authentication Tab Switcher (Sign In vs Register) */
+            <div className="space-y-6">
+              
               <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-bold">
                 <button
-                  onClick={() => setActiveTab('login')}
+                  onClick={() => {
+                    setActiveTab('login');
+                    setLoginErrors({});
+                    setLoginBannerError(null);
+                  }}
                   className={`py-2 rounded-lg transition-all ${
                     activeTab === 'login'
                       ? 'bg-amber-500 text-slate-950 shadow-md'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  Sign In
+                  Member Sign In
                 </button>
                 <button
-                  onClick={() => setActiveTab('register')}
+                  onClick={() => {
+                    setActiveTab('register');
+                    setRegErrors({});
+                    setRegBannerError(null);
+                    setRegConfirmPassword('');
+                  }}
                   className={`py-2 rounded-lg transition-all ${
                     activeTab === 'register'
                       ? 'bg-amber-500 text-slate-950 shadow-md'
@@ -333,6 +361,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               {activeTab === 'login' ? (
                 /* Sign In Form */
                 <form onSubmit={handleSignInSubmit} className="space-y-4">
+                  {loginBannerError && (
+                    <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>{loginBannerError}</span>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
                       Email Address
@@ -341,13 +376,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <Mail className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
                       <input
                         type="email"
-                        required
                         placeholder="guest@example.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (loginErrors.email) setLoginErrors((prev) => ({ ...prev, email: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          loginErrors.email ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
                       />
                     </div>
+                    {loginErrors.email && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{loginErrors.email}</p>
+                    )}
                   </div>
 
                   <div>
@@ -358,13 +400,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <Lock className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
                       <input
                         type="password"
-                        required
                         placeholder="••••••••"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (loginErrors.password) setLoginErrors((prev) => ({ ...prev, password: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          loginErrors.password ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
                       />
                     </div>
+                    {loginErrors.password && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{loginErrors.password}</p>
+                    )}
                   </div>
 
                   <button
@@ -389,6 +438,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               ) : (
                 /* Register Form */
                 <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+                  {regBannerError && (
+                    <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>{regBannerError}</span>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
                       Full Name
@@ -397,13 +453,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <User className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
                       <input
                         type="text"
-                        required
                         placeholder="John Doe"
                         value={regName}
-                        onChange={(e) => setRegName(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        onChange={(e) => {
+                          setRegName(e.target.value);
+                          if (regErrors.name) setRegErrors((prev) => ({ ...prev, name: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          regErrors.name ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
                       />
                     </div>
+                    {regErrors.name && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{regErrors.name}</p>
+                    )}
                   </div>
 
                   <div>
@@ -414,13 +477,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <Mail className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
                       <input
                         type="email"
-                        required
                         placeholder="john@example.com"
                         value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        onChange={(e) => {
+                          setRegEmail(e.target.value);
+                          if (regErrors.email) setRegErrors((prev) => ({ ...prev, email: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          regErrors.email ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
                       />
                     </div>
+                    {regErrors.email && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{regErrors.email}</p>
+                    )}
                   </div>
 
                   <div>
@@ -433,10 +503,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         type="tel"
                         placeholder="+94 77 123 4567"
                         value={regPhone}
-                        onChange={(e) => setRegPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        onChange={(e) => {
+                          setRegPhone(e.target.value);
+                          if (regErrors.phone) setRegErrors((prev) => ({ ...prev, phone: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          regErrors.phone ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
                       />
                     </div>
+                    {regErrors.phone && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{regErrors.phone}</p>
+                    )}
                   </div>
 
                   <div>
@@ -447,13 +525,45 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <Lock className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
                       <input
                         type="password"
-                        required
-                        placeholder="Create strong password"
+                        placeholder="Create strong password (min 6 chars)"
                         value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        onChange={(e) => {
+                          setRegPassword(e.target.value);
+                          if (regErrors.password) setRegErrors((prev) => ({ ...prev, password: '' }));
+                          if (regErrors.confirmPassword) setRegErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          regErrors.password ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
                       />
                     </div>
+                    {regErrors.password && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{regErrors.password}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
+                      <input
+                        type="password"
+                        placeholder="Re-enter your password"
+                        value={regConfirmPassword}
+                        onChange={(e) => {
+                          setRegConfirmPassword(e.target.value);
+                          if (regErrors.confirmPassword) setRegErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                        }}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-xs text-white placeholder-slate-500 focus:outline-none ${
+                          regErrors.confirmPassword ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-amber-400'
+                        }`}
+                      />
+                    </div>
+                    {regErrors.confirmPassword && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold">{regErrors.confirmPassword}</p>
+                    )}
                   </div>
 
                   <button

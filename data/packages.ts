@@ -17,6 +17,7 @@ export interface SafariPackage {
   description: string;
   highlights: string[];
   inclusions: string[];
+  safetyFeatures?: string[];
   maxGuests: number;
 }
 
@@ -26,6 +27,7 @@ export interface JeepVehicle {
   tagline: string;
   model: string;
   image: string;
+  images?: string[];
   capacity: string;
   features: string[];
   specs: {
@@ -105,6 +107,13 @@ export const SAFARI_PACKAGES: SafariPackage[] = [
       'All National Park VIP Permits & Entry',
       'High-Zoom Binoculars & Wildlife Spotting Equipment'
     ],
+    safetyFeatures: [
+      'Heavy-Duty Steel Roll Cages (Anti-Topple Certified Frame)',
+      'Individual 3-Point Ergonomic Seatbelts for All Seats',
+      'Certified Wilderness First-Aid & Emergency Medical Kit',
+      'Satellite GPS Live Tracker & DWC Ranger Emergency Radio',
+      'High-Visibility Dust Protection Goggles & Child Harnesses'
+    ],
     maxGuests: 4
   },
   {
@@ -137,6 +146,13 @@ export const SAFARI_PACKAGES: SafariPackage[] = [
       'Park Entrance Ticket Assistance',
       'Complimentary Dust Goggles & Binoculars'
     ],
+    safetyFeatures: [
+      'Heavy-Duty Steel Roll Cages & Reinforced Bull Bars',
+      '3-Point Off-Road Seatbelts on All Elevated Seats',
+      'Certified Wilderness First-Aid & Snakebite Emergency Kit',
+      'VHF High-Frequency Ranger Radio & Live Satellite Tracking',
+      'Complimentary Child Safety Harnesses & Eye Dust Protection'
+    ],
     maxGuests: 6
   },
   {
@@ -167,6 +183,13 @@ export const SAFARI_PACKAGES: SafariPackage[] = [
       'Chilled Fresh King Coconuts & Waters',
       'Hotel Pick-up within Udawalawe area',
       'Children Safety Harnesses'
+    ],
+    safetyFeatures: [
+      'Heavy-Duty Steel Roll Cage Frame & Padded Grab Bars',
+      '3-Point Ergonomic Seatbelts per Seat Row',
+      'First-Aid Kit & Certified CPR Trained Driver/Tracker',
+      'Isofix Child Safety Anchors & Specialized Youth Harnesses',
+      'Onboard VHF Radio & Direct Park Emergency Rescue Link'
     ],
     maxGuests: 6
   },
@@ -200,6 +223,13 @@ export const SAFARI_PACKAGES: SafariPackage[] = [
       'Ice Cooler & Premium Refreshments',
       'DSLR Camera Gimbal & Sandbag Mounts'
     ],
+    safetyFeatures: [
+      'Heavy-Duty 70-Series Steel Roll Cages & Skid Plates',
+      '3-Point Individual Off-Road Seatbelts for All Guests',
+      'Deep Wilderness Trauma First-Aid & Oxygen Emergency Kit',
+      'Dual Satellite Emergency Tracker & DWC Ranger Radio',
+      'Child Safety Harnesses & Anti-Dust Eye Protection'
+    ],
     maxGuests: 6
   },
   {
@@ -231,6 +261,13 @@ export const SAFARI_PACKAGES: SafariPackage[] = [
       'Tropical Fruit Snacks & Cold Drinks',
       'Free Binoculars per seat'
     ],
+    safetyFeatures: [
+      'Heavy-Duty Reinforced Steel Roll Cage Structure',
+      '3-Point Passenger Seatbelts on Every Seat',
+      'Complete Wilderness First-Aid & Medical Supplies',
+      'Live GPS Location Beacon & Park Ranger Emergency Channel',
+      'Complimentary UV Protection Dust Goggles & Child Harnesses'
+    ],
     maxGuests: 6
   }
 ];
@@ -242,6 +279,12 @@ export const JEEP_FLEET: JeepVehicle[] = [
     tagline: 'The Ultimate Heavy-Duty Safari Beast',
     model: 'Custom 2024 Land Cruiser HZJ79 Heavy Duty',
     image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=1200&q=80'
+    ],
     capacity: '6 VIP Guests + Driver & Tracker',
     features: [
       'Tiered Stadium Leather Bucket Seats',
@@ -264,6 +307,11 @@ export const JEEP_FLEET: JeepVehicle[] = [
     tagline: 'Classic British Adventure Icon',
     model: 'Land Rover Defender 110 Safari Edition',
     image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80'
+    ],
     capacity: '6 Guests + Driver & Tracker',
     features: [
       'Canvas Roll-up All-Weather Canopy',
@@ -285,6 +333,11 @@ export const JEEP_FLEET: JeepVehicle[] = [
     tagline: 'Agile & Quiet Track Specialist',
     model: 'Toyota Hilux Revo Custom Safari Spec',
     image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=80'
+    ],
     capacity: '6 Guests + Driver & Tracker',
     features: [
       'Whisper-Quiet Turbo Diesel Engine',

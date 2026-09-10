@@ -7,6 +7,9 @@ import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../components/AccountModal';
 import { SAFARI_PACKAGES, SafariPackage, REVIEWS } from '../../data/packages';
+import { useCurrency } from '../../context/CurrencyContext';
+import { useAuth } from '../../context/AuthContext';
+import { getTomorrowDateString } from '../../lib/validation';
 import {
   Star,
   Clock,
@@ -31,19 +34,19 @@ function SafariDetailContent() {
   const searchParams = useSearchParams();
   const safariIdParam = searchParams ? searchParams.get('id') : null;
 
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'LKR'>('USD');
+  const { formatPrice } = useCurrency();
+  const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   
   // Account Modal state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
 
   // Selected Safari Package State
   const initialPkg = SAFARI_PACKAGES.find((p) => p.id === safariIdParam) || SAFARI_PACKAGES[0];
   const [activeSafari, setActiveSafari] = useState<SafariPackage>(initialPkg);
 
   // Interactive booking box state inside single safari page
-  const [bookingDate, setBookingDate] = useState('2026-08-20');
+  const [bookingDate, setBookingDate] = useState(getTomorrowDateString());
   const [guestCount, setGuestCount] = useState(2);
 
   useEffect(() => {
@@ -53,23 +56,10 @@ function SafariDetailContent() {
     }
   }, [safariIdParam]);
 
-  const formatPrice = (pkg: SafariPackage) => {
-    if (currency === 'EUR') return `€${pkg.priceEur}`;
-    if (currency === 'LKR') return `Rs. ${pkg.priceLkr.toLocaleString()}`;
-    return `$${pkg.priceUsd}`;
-  };
-
-  const calculateTotalPrice = () => {
-    const base = currency === 'EUR' ? activeSafari.priceEur : currency === 'LKR' ? activeSafari.priceLkr : activeSafari.priceUsd;
-    return base;
-  };
-
   return (
     <main className="min-h-screen flex flex-col bg-[#050b14] text-white">
       {/* Navigation Header */}
       <Navbar
-        currency={currency}
-        onCurrencyChange={(curr) => setCurrency(curr)}
         onOpenBooking={() => setIsBookingOpen(true)}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
@@ -249,6 +239,42 @@ function SafariDetailContent() {
                 </div>
               </div>
 
+              {/* Passenger Safety Features & Emergency Equipment */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-xl font-bold font-serif text-white uppercase tracking-wide">
+                    Passenger Safety & Emergency Standards
+                  </h3>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-900/90 border border-amber-500/40 space-y-4 shadow-xl">
+                  <p className="text-xs text-slate-300 leading-relaxed font-light">
+                    Your safety is our highest priority. All Wildking safari packages include top-tier off-road passenger safety equipment and emergency protocols engineered for off-road national park expeditions:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(activeSafari.safetyFeatures || [
+                      'Heavy-Duty Steel Roll Cages (Anti-Topple Certified)',
+                      '3-Point Individual Ergonomic Seatbelts for All Seats',
+                      'Certified Wilderness First-Aid & Emergency Kit Onboard',
+                      'Satellite GPS Live Tracker & DWC Ranger Emergency Radio',
+                      'High-Visibility Dust Protection Goggles & Child Harnesses'
+                    ]).map((feat, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-xl bg-[#06111a] border border-amber-500/20 flex items-center gap-3"
+                      >
+                        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-100">
+                          {feat}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* Hour-by-Hour Expedition Schedule Timeline */}
               <div className="space-y-4 pt-2">
                 <h3 className="text-xl font-bold font-serif text-white uppercase tracking-wide">
@@ -304,7 +330,7 @@ function SafariDetailContent() {
                       ALL-INCLUSIVE JEEP PRICE
                     </span>
                     <div className="text-3xl font-black text-amber-400">
-                      {formatPrice(activeSafari)}
+                      {formatPrice(activeSafari.priceLkr)}
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
@@ -321,36 +347,81 @@ function SafariDetailContent() {
                     </label>
                     <input
                       type="date"
+                      min={getTomorrowDateString()}
                       value={bookingDate}
                       onChange={(e) => setBookingDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-semibold focus:outline-none focus:border-amber-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-semibold focus:outline-none focus:border-amber-400 [color-scheme:dark]"
                     />
                   </div>
 
                   <div>
                     <label className="block font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-amber-400" />
-                      Guests (Private Jeep)
+                      Guests (Max 6 per Jeep)
                     </label>
-                    <select
-                      value={guestCount}
-                      onChange={(e) => setGuestCount(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-semibold focus:outline-none focus:border-amber-400"
-                    >
-                      <option value={1}>1 Guest</option>
-                      <option value={2}>2 Guests</option>
-                      <option value={3}>3 Guests</option>
-                      <option value={4}>4 Guests</option>
-                      <option value={5}>5 Guests</option>
-                      <option value={6}>6 Guests (Full Capacity)</option>
-                    </select>
+                    <div className="space-y-2">
+                      <select
+                        value={guestCount <= 6 ? guestCount : 'custom'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'custom') {
+                            if (guestCount <= 6) setGuestCount(7);
+                          } else {
+                            setGuestCount(Number(val));
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-semibold focus:outline-none focus:border-amber-400 text-xs"
+                      >
+                        <option value={1}>1 Guest</option>
+                        <option value={2}>2 Guests</option>
+                        <option value={3}>3 Guests</option>
+                        <option value={4}>4 Guests</option>
+                        <option value={5}>5 Guests</option>
+                        <option value={6}>6 Guests (Single Jeep Capacity)</option>
+                        <option value="custom">More than 6 guests (Enter number)...</option>
+                      </select>
+
+                      <div className="relative flex items-center">
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          placeholder="Enter guest count"
+                          value={guestCount || ''}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setGuestCount(isNaN(val) || val < 1 ? 1 : val);
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-bold text-xs focus:outline-none focus:border-amber-400"
+                        />
+                        <span className="absolute right-3 text-[10px] font-bold text-slate-400 pointer-events-none">
+                          Total Guests
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
+                {/* Exceeding Single Vehicle Capacity Notice */}
+                {guestCount > 6 && (
+                  <div className="p-3.5 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-200 text-xs space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2 font-bold text-amber-300">
+                      <Info className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{Math.ceil(guestCount / 6)} Vehicles Required</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-slate-200">
+                      Single Jeep max capacity is <strong>6 guests</strong>. For <strong>{guestCount} guests</strong>, <strong>{Math.ceil(guestCount / 6)} 4x4 Jeeps</strong> will be reserved.
+                    </p>
+                    <p className="text-[10px] leading-relaxed text-amber-300 font-medium border-t border-amber-500/30 pt-1.5">
+                      💡 <strong>Full Vehicle Payment Policy:</strong> To book extra seats from another vehicle, full package rate applies per additional Jeep. All remaining seats on the second Jeep will be exclusively reserved for your party.
+                    </p>
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-slate-800 space-y-3">
                   <div className="flex items-center justify-between text-xs text-slate-300">
-                    <span>Estimated Total:</span>
-                    <span className="text-lg font-black text-amber-300">{formatPrice(activeSafari)}</span>
+                    <span>Estimated Total ({Math.ceil(guestCount / 6)} Jeep{Math.ceil(guestCount / 6) > 1 ? 's' : ''}):</span>
+                    <span className="text-lg font-black text-amber-300">{formatPrice(activeSafari.priceLkr * Math.ceil(guestCount / 6))}</span>
                   </div>
 
                   <button
@@ -404,16 +475,13 @@ function SafariDetailContent() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={activeSafari}
-        currency={currency}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onLogin={(loggedInUser) => setUser(loggedInUser)}
-        onLogout={() => setUser(null)}
         onOpenBooking={() => setIsBookingOpen(true)}
       />
     </main>

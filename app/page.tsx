@@ -12,12 +12,12 @@ import { BookingModal } from '../components/BookingModal';
 import { AccountModal, UserProfile } from '../components/AccountModal';
 import { Footer } from '../components/Footer';
 import { SafariPackage, SAFARI_PACKAGES } from '../data/packages';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'LKR'>('USD');
+  const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
   const [activeParkFilter, setActiveParkFilter] = useState('all');
 
@@ -63,8 +63,6 @@ export default function Home() {
     <main className="min-h-screen flex flex-col bg-[#050b14] text-white">
       {/* Navigation Header */}
       <Navbar
-        currency={currency}
-        onCurrencyChange={(curr) => setCurrency(curr)}
         onOpenBooking={handleOpenGeneralBooking}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
@@ -79,13 +77,12 @@ export default function Home() {
 
       {/* Featured Safari Packages Grid */}
       <FeaturedPackages
-        currency={currency}
         onSelectPackage={handleOpenBookingWithPackage}
         activeFilterPark={activeParkFilter}
       />
 
       {/* 4x4 Custom Fleet Showcase */}
-      <FleetShowcase />
+      <FleetShowcase onOpenBooking={handleOpenGeneralBooking} />
 
       {/* Why Choose Wildking */}
       <WhyUs />
@@ -104,20 +101,13 @@ export default function Home() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={selectedPackage}
-        currency={currency}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
-        user={user}
-        onLogin={(loggedInUser) => {
-          setUser(loggedInUser);
-        }}
-        onLogout={() => {
-          setUser(null);
-        }}
         onOpenBooking={() => {
           handleOpenGeneralBooking();
         }}

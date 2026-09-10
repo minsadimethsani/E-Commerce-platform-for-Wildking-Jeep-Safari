@@ -44,6 +44,7 @@ export interface JeepVehicleDoc {
   tagline: string;
   model: string;
   image: string;
+  images?: string[];
   capacity: string;
   features: string[];
   specs: VehicleSpecs;
@@ -56,6 +57,7 @@ export interface ParkDestinationDoc {
   slug: string;
   tagline: string;
   image: string;
+  gallery?: string[];
   primarySpecies: string[];
   bestSeason: string;
   keyFact: string;
@@ -82,6 +84,7 @@ export interface BookingDoc {
   park: string;
   expeditionDate: string;
   timeSlot: string;
+  selectedVehicle?: string;
   guestCount: number;
   customerInfo: CustomerInfo;
   pickupDetails?: PickupDetails;

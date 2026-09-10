@@ -204,7 +204,7 @@ export default function AdminPage() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-grow p-4 md:p-8 space-y-6 overflow-y-auto max-h-screen">
+      <main className="flex-1 min-w-0 p-4 md:p-8 space-y-6 overflow-y-auto max-h-screen">
         {/* Tab Views */}
         {activeTab === "overview" && (
           <OverviewStats

@@ -4,6 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { validatePackageForm } from "@/lib/validation";
 import { getPackagesFromFirestore, savePackageInFirestore } from "@/lib/firestore-service";
 import { SAFARI_PACKAGES } from "@/data/packages";
 import { SafariPackageDoc, ParkType, TimeSlotType } from "@/lib/types/firestore";
@@ -119,6 +120,23 @@ export default function SingleAdminPackagePage({ params }: SinglePackagePageProp
   const handleSavePackage = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveSuccess(false);
+    setError(null);
+
+    const valRes = validatePackageForm({
+      title,
+      parkName: PARK_NAME_MAP[park] || parkName,
+      tagline,
+      priceLkr: Number(priceLkr),
+      description,
+      maxGuests: Number(maxGuests),
+    });
+
+    if (!valRes.isValid) {
+      const firstError = Object.values(valRes.errors)[0];
+      alert(`Validation Error: ${firstError}`);
+      return;
+    }
+
     setIsSaving(true);
 
     const updatedDoc: SafariPackageDoc = {
