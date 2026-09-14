@@ -166,6 +166,11 @@ export const FleetShowcase: React.FC<FleetShowcaseProps> = ({ onOpenBooking }) =
       }
     };
     fetchFleet();
+
+    window.addEventListener("wildking_data_updated", fetchFleet);
+    return () => {
+      window.removeEventListener("wildking_data_updated", fetchFleet);
+    };
   }, []);
 
   const handleOpenSpecModal = (vehicle: JeepVehicle | JeepVehicleDoc) => {

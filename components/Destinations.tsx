@@ -1,13 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PARK_DESTINATIONS } from '../data/packages';
+import { getDestinationsFromFirestore } from '../lib/firestore-service';
+import { ParkDestinationDoc } from '../lib/types/firestore';
 
 interface DestinationsProps {
   onSelectPark: (parkId: string) => void;
 }
 
 export const Destinations: React.FC<DestinationsProps> = ({ onSelectPark }) => {
+  const [destinationsList, setDestinationsList] = useState<ParkDestinationDoc[]>(PARK_DESTINATIONS as ParkDestinationDoc[]);
+
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        const firestoreDests = await getDestinationsFromFirestore();
+        if (firestoreDests && firestoreDests.length > 0) {
+          setDestinationsList(firestoreDests);
+        }
+      } catch (err) {
+        console.error("Error fetching destinations in Destinations component:", err);
+      }
+    };
+
+    fetchDestinations();
+
+    window.addEventListener("wildking_data_updated", fetchDestinations);
+    return () => {
+      window.removeEventListener("wildking_data_updated", fetchDestinations);
+    };
+  }, []);
+
   return (
     <section id="destinations" className="py-16 lg:py-24 bg-[#050b14] text-white font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -20,7 +44,7 @@ export const Destinations: React.FC<DestinationsProps> = ({ onSelectPark }) => {
 
         {/* Destinations Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PARK_DESTINATIONS.map((park) => (
+          {destinationsList.map((park) => (
             <div
               key={park.id}
               onClick={() => onSelectPark(park.id)}

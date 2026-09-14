@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../components/AccountModal';
 import { SAFARI_PACKAGES, SafariPackage, REVIEWS } from '../../data/packages';
+import { getPackagesFromFirestore } from '../../lib/firestore-service';
+import { SafariPackageDoc } from '../../lib/types/firestore';
+import { goBackWithFallback } from '../../lib/navigation-utils';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
 import { getTomorrowDateString } from '../../lib/validation';
@@ -17,6 +20,7 @@ import {
   CheckCircle2,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   Calendar,
   Users,
@@ -31,6 +35,7 @@ import {
 } from 'lucide-react';
 
 function SafariDetailContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const safariIdParam = searchParams ? searchParams.get('id') : null;
 
@@ -41,19 +46,39 @@ function SafariDetailContent() {
   // Account Modal state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
 
-  // Selected Safari Package State
-  const initialPkg = SAFARI_PACKAGES.find((p) => p.id === safariIdParam) || SAFARI_PACKAGES[0];
-  const [activeSafari, setActiveSafari] = useState<SafariPackage>(initialPkg);
+  // Dynamic Live Packages State
+  const [packagesList, setPackagesList] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
+  const [activeSafari, setActiveSafari] = useState<SafariPackage>(() => {
+    const found = SAFARI_PACKAGES.find((p) => p.id === safariIdParam);
+    return (found as SafariPackage) || (SAFARI_PACKAGES[0] as SafariPackage);
+  });
 
   // Interactive booking box state inside single safari page
   const [bookingDate, setBookingDate] = useState(getTomorrowDateString());
   const [guestCount, setGuestCount] = useState(2);
 
   useEffect(() => {
-    if (safariIdParam) {
-      const found = SAFARI_PACKAGES.find((p) => p.id === safariIdParam);
-      if (found) setActiveSafari(found);
-    }
+    const fetchData = async () => {
+      try {
+        const pkgs = await getPackagesFromFirestore();
+        if (pkgs && pkgs.length > 0) {
+          setPackagesList(pkgs);
+          if (safariIdParam) {
+            const found = pkgs.find((p) => p.id === safariIdParam);
+            if (found) setActiveSafari(found as SafariPackage);
+          } else if (!activeSafari || !pkgs.some((p) => p.id === activeSafari.id)) {
+            setActiveSafari(pkgs[0] as SafariPackage);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching packages in SafariDetailPage:", err);
+      }
+    };
+
+    fetchData();
+
+    window.addEventListener("wildking_data_updated", fetchData);
+    return () => window.removeEventListener("wildking_data_updated", fetchData);
   }, [safariIdParam]);
 
   return (
@@ -73,10 +98,10 @@ function SafariDetailContent() {
           </span>
           
           <div className="flex items-center gap-2 shrink-0">
-            {SAFARI_PACKAGES.map((pkg) => (
+            {packagesList.map((pkg) => (
               <button
                 key={pkg.id}
-                onClick={() => setActiveSafari(pkg)}
+                onClick={() => setActiveSafari(pkg as SafariPackage)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                   activeSafari.id === pkg.id
                     ? 'bg-amber-400 text-slate-950 shadow-md'
@@ -94,13 +119,23 @@ function SafariDetailContent() {
       <section className="py-12 px-4 sm:px-6 lg:px-8 bg-[#050b14]">
         <div className="max-w-7xl mx-auto space-y-10">
           
-          {/* Breadcrumb Navigation */}
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-            <a href="/" className="hover:text-amber-400 transition-colors">Home</a>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <a href="/tours" className="hover:text-amber-400 transition-colors">Tours</a>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-amber-300 font-bold truncate max-w-xs sm:max-w-md">{activeSafari.title}</span>
+          {/* Breadcrumb Navigation & Smart Back Button */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <a href="/" className="hover:text-amber-400 transition-colors">Home</a>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <a href="/tours" className="hover:text-amber-400 transition-colors">Tours</a>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-amber-300 font-bold truncate max-w-xs sm:max-w-md">{activeSafari.title}</span>
+            </div>
+
+            <button
+              onClick={() => goBackWithFallback(router, '/tours')}
+              className="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span>Back to Previous Page</span>
+            </button>
           </div>
 
           {/* Safari Header Banner Grid */}

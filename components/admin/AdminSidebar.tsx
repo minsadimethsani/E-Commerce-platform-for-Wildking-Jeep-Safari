@@ -16,9 +16,10 @@ import {
   ShieldCheck,
   Globe,
   LogOut,
+  Settings,
 } from "lucide-react";
 
-export type AdminTab = "overview" | "bookings" | "inquiries" | "packages" | "parks" | "fleet" | "reviews" | "customers" | "roles";
+export type AdminTab = "overview" | "bookings" | "inquiries" | "packages" | "parks" | "fleet" | "reviews" | "customers" | "roles" | "settings" | "logout";
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -51,7 +52,8 @@ export default function AdminSidebar({
     { id: "parks", label: "Safari Parks", icon: <Trees className="w-4 h-4" /> },
     { id: "fleet", label: "Jeep Fleet", icon: <Truck className="w-4 h-4" /> },
     { id: "reviews", label: "Customer Reviews", icon: <Star className="w-4 h-4" /> },
-    { id: "roles", label: "Roles & Access", icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
+    { id: "logout", label: "Logout", icon: <LogOut className="w-4 h-4" /> },
   ];
 
   // Filter navigation tabs based on logged-in user's role permissions
@@ -84,9 +86,11 @@ export default function AdminSidebar({
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => (item.id === "logout" ? handleLogout() : setActiveTab(item.id))}
                 className={`w-full h-11 flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-200 text-sm font-semibold cursor-pointer shrink-0 ${
-                  isActive
+                  item.id === "logout"
+                    ? "text-rose-400 hover:bg-rose-950/50 hover:text-rose-300"
+                    : isActive
                     ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 font-bold"
                     : "text-emerald-100/90 hover:bg-emerald-900/60 hover:text-white"
                 }`}

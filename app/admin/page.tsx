@@ -24,6 +24,7 @@ import FleetManager from "@/components/admin/FleetManager";
 import ReviewsManager from "@/components/admin/ReviewsManager";
 import CustomersManager from "@/components/admin/CustomersManager";
 import RolesManager from "@/components/admin/RolesManager";
+import SettingsManager from "@/components/admin/SettingsManager";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 const MOCK_BOOKINGS: BookingDoc[] = [
@@ -114,6 +115,17 @@ export default function AdminPage() {
   const [reviews, setReviews] = useState<ReviewDoc[]>([]);
   const [customers, setCustomers] = useState<DatabaseUserRecord[]>([]);
 
+  const handleTabChange = (newTab: AdminTab) => {
+    setActiveTab(newTab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("tab") !== newTab) {
+        url.searchParams.set("tab", newTab);
+        window.history.pushState({ tab: newTab }, "", url.toString());
+      }
+    }
+  };
+
   useEffect(() => {
     if (!isAdminAuthenticated()) {
       router.replace("/admin/login");
@@ -125,10 +137,24 @@ export default function AdminPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab") as AdminTab | null;
-      if (tabParam && ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews", "customers", "roles"].includes(tabParam)) {
+      if (tabParam && ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews", "customers", "roles", "settings", "logout"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
     }
+
+    const handlePopState = () => {
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get("tab") as AdminTab | null;
+        if (tabParam && ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews", "customers", "roles", "settings", "logout"].includes(tabParam)) {
+          setActiveTab(tabParam);
+        } else {
+          setActiveTab("overview");
+        }
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
 
     const loadAdminData = async () => {
       setIsLoading(true);
@@ -153,6 +179,10 @@ export default function AdminPage() {
     };
 
     loadAdminData();
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, [router]);
 
   const handleUpdateBookingStatus = async (bookingId: string, newStatus: BookingDoc["status"]) => {
@@ -211,7 +241,7 @@ export default function AdminPage() {
       {/* Sidebar */}
       <AdminSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         pendingBookingsCount={pendingBookingsCount}
         newInquiriesCount={newInquiriesCount}
       />
@@ -234,7 +264,7 @@ export default function AdminPage() {
             </div>
 
             <button
-              onClick={() => setActiveTab("overview")}
+              onClick={() => handleTabChange("overview")}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 stroke-[3]" />
@@ -249,7 +279,7 @@ export default function AdminPage() {
                 inquiries={inquiries}
                 onTriggerSeed={handleTriggerSeed}
                 isSeeding={isSeeding}
-                setActiveTab={(tab) => setActiveTab(tab)}
+                setActiveTab={(tab) => handleTabChange(tab)}
               />
             )}
 
@@ -287,8 +317,8 @@ export default function AdminPage() {
               <ReviewsManager reviews={reviews} />
             )}
 
-            {activeTab === "roles" && (
-              <RolesManager currentRole={currentRole} />
+            {(activeTab === "settings" || activeTab === "roles") && (
+              <SettingsManager currentRole={currentRole} />
             )}
           </>
         )}

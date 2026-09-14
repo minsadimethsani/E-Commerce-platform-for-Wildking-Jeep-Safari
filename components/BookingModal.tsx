@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { SafariPackage, SAFARI_PACKAGES } from '../data/packages';
-import { createBookingInFirestore, checkVehicleSlotAvailability } from '../lib/firestore-service';
+import { createBookingInFirestore, checkVehicleSlotAvailability, getPackagesFromFirestore } from '../lib/firestore-service';
+import { SafariPackageDoc } from '../lib/types/firestore';
 import { useCurrency } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -35,6 +36,26 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [shiftTime, setShiftTime] = useState(defaultPkg.timeSlot);
   const [passengers, setPassengers] = useState(2);
   const [selectedVehicle, setSelectedVehicle] = useState('Land Cruiser VIP 70');
+  
+  // Live Packages list
+  const [packagesList, setPackagesList] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
+
+  useEffect(() => {
+    const fetchPkgs = async () => {
+      try {
+        const pkgs = await getPackagesFromFirestore();
+        if (pkgs && pkgs.length > 0) {
+          setPackagesList(pkgs);
+        }
+      } catch (err) {
+        console.error("Error fetching packages in BookingModal:", err);
+      }
+    };
+    fetchPkgs();
+
+    window.addEventListener("wildking_data_updated", fetchPkgs);
+    return () => window.removeEventListener("wildking_data_updated", fetchPkgs);
+  }, []);
   
   // Customer details
   const [custName, setCustName] = useState('');
@@ -87,7 +108,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentPkg = SAFARI_PACKAGES.find((p) => p.id === pkgId) || defaultPkg;
+  const currentPkg = (packagesList.find((p) => p.id === pkgId) as SafariPackage) || defaultPkg;
 
   // Calculate required 4x4 Jeeps (Max 6 guests per vehicle)
   const MAX_PER_VEHICLE = 6;
@@ -423,7 +444,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 onChange={(e) => setPkgId(e.target.value)}
                 className="w-full bg-[#0e1d15] border border-emerald-800/60 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:outline-none focus:border-amber-400"
               >
-                {SAFARI_PACKAGES.map((p) => (
+                {packagesList.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.title} ({p.parkName})
                   </option>

@@ -32,10 +32,10 @@ export const ROLE_DESCRIPTIONS: Record<AdminRole, string> = {
 };
 
 export const ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
-  super_admin: ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews", "customers", "roles"],
-  operations: ["overview", "bookings", "inquiries", "parks", "fleet"],
-  support: ["overview", "bookings", "inquiries", "reviews", "customers"],
-  content_manager: ["overview", "packages", "parks", "fleet", "reviews"],
+  super_admin: ["overview", "bookings", "inquiries", "packages", "parks", "fleet", "reviews", "customers", "roles", "settings", "logout"],
+  operations: ["overview", "bookings", "inquiries", "parks", "fleet", "settings", "logout"],
+  support: ["overview", "bookings", "inquiries", "reviews", "customers", "settings", "logout"],
+  content_manager: ["overview", "packages", "parks", "fleet", "reviews", "settings", "logout"],
 };
 
 // Default Pre-Configured Demo Staff Accounts across all roles

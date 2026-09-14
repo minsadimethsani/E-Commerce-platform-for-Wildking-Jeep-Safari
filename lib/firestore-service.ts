@@ -11,6 +11,7 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  deleteDoc,
   serverTimestamp,
   QueryDocumentSnapshot,
   DocumentData,
@@ -35,7 +36,14 @@ import {
   UserDoc,
   GuideDoc,
   PromotionDoc,
+  SubscriberDoc,
+  TriggerEmailDoc,
 } from "./types/firestore";
+import {
+  getAlertSubscriptionEmailTemplate,
+  getBookingConfirmationEmailTemplate,
+  getInquiryReceiptEmailTemplate,
+} from "./email-templates";
 
 export type BookingInput = Omit<BookingDoc, "id" | "createdAt" | "status" | "paymentStatus"> & {
   status?: BookingDoc["status"];
@@ -205,6 +213,78 @@ export async function getReviewsFromFirestore(): Promise<ReviewDoc[]> {
 }
 
 // ----------------------------------------------------
+// Firestore Trigger Email Extension Helpers ('mail' collection)
+// ----------------------------------------------------
+
+/**
+ * Adds an email document to the 'mail' Firestore collection, which is monitored
+ * by the standard Firebase Trigger Email extension (firestore-send-email).
+ */
+export async function sendEmailViaTriggerEmail(emailPayload: {
+  to: string | string[];
+  message: {
+    subject: string;
+    html: string;
+    text?: string;
+  };
+}) {
+  try {
+    const recipientList = Array.isArray(emailPayload.to) ? emailPayload.to : [emailPayload.to];
+    const docRef = await addDoc(collection(db, "mail"), {
+      to: recipientList,
+      message: emailPayload.message,
+      createdAt: serverTimestamp(),
+    });
+    console.log("Trigger Email document queued in Firestore 'mail' collection:", docRef.id);
+    return { success: true, emailId: docRef.id };
+  } catch (error: any) {
+    if (error?.code === "permission-denied" || error?.message?.includes("permissions")) {
+      console.warn("Firestore Security Rules Note: Permission denied for 'mail' collection. Please add write rules for 'mail' in Firebase Console.", error);
+    } else {
+      console.error("Failed to write to Firestore 'mail' collection:", error);
+    }
+    return { success: false, error: error?.message || "Failed to write trigger email document" };
+  }
+}
+
+/**
+ * Subscribes a customer to Wildlife Dispatch alerts in Firestore
+ * 1. Saves email to 'subscribers' collection
+ * 2. Queues welcome trigger email in 'mail' collection
+ */
+export async function subscribeToAlertsInFirestore(email: string, source: string = "website_footer") {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return { success: false, error: "Please enter a valid email address." };
+  }
+
+  try {
+    // Write subscriber record to 'subscribers' collection
+    await addDoc(collection(db, "subscribers"), {
+      email: cleanEmail,
+      status: "active",
+      source,
+      subscribedAt: serverTimestamp(),
+    });
+  } catch (err: any) {
+    console.warn("Firestore Note: Permission/error writing to 'subscribers' collection:", err?.message || err);
+  }
+
+  // Queue Welcome Email via Trigger Email extension ('mail' collection)
+  const emailContent = getAlertSubscriptionEmailTemplate(cleanEmail);
+  const emailRes = await sendEmailViaTriggerEmail({
+    to: cleanEmail,
+    message: emailContent,
+  });
+
+  return {
+    success: true,
+    emailSent: emailRes.success,
+    message: "Subscribed to Wildlife Dispatch alerts successfully!",
+  };
+}
+
+// ----------------------------------------------------
 // Write Mutations (Bookings, Inquiries, User Profiles)
 // ----------------------------------------------------
 export async function createBookingInFirestore(booking: BookingInput) {
@@ -215,38 +295,71 @@ export async function createBookingInFirestore(booking: BookingInput) {
   };
   registerConfirmedBookingLocally(bookingRecord);
 
+  let bookingId = "WK-" + Math.floor(100000 + Math.random() * 900000);
+
   try {
     const docRef = await addDoc(collection(db, "bookings"), {
       ...bookingRecord,
       createdAt: serverTimestamp(),
     });
-    return { success: true, bookingId: docRef.id };
+    bookingId = docRef.id;
   } catch (error: any) {
     if (error?.code === "permission-denied" || error?.message?.includes("permissions")) {
       console.warn("Firestore Security Rules Note: Permission denied for 'bookings'. Please update rules in Firebase Console.", error);
-      return { success: true, bookingId: "WK-" + Math.floor(100000 + Math.random() * 900000) };
+    } else {
+      console.error("Failed to create booking in Firestore:", error);
     }
-    console.error("Failed to create booking in Firestore:", error);
-    return { success: true, bookingId: "WK-" + Math.floor(100000 + Math.random() * 900000) };
   }
+
+  // Trigger Booking Confirmation Email via Firestore 'mail' collection
+  if (bookingRecord.customerInfo?.email) {
+    const displayRef = bookingId.length > 8 ? `BK-${bookingId.slice(0, 8).toUpperCase()}` : bookingId;
+    const emailTemplate = getBookingConfirmationEmailTemplate(bookingRecord, displayRef);
+    
+    // Asynchronously queue trigger email document
+    sendEmailViaTriggerEmail({
+      to: bookingRecord.customerInfo.email,
+      message: emailTemplate,
+    }).catch((emailErr) => {
+      console.warn("Trigger Email dispatch warning for booking:", emailErr);
+    });
+  }
+
+  return { success: true, bookingId };
 }
 
 export async function createInquiryInFirestore(inquiry: InquiryInput) {
+  let inquiryId = "INQ-" + Math.floor(100 + Math.random() * 900);
+
   try {
     const docRef = await addDoc(collection(db, "inquiries"), {
       ...inquiry,
       status: inquiry.status || "new",
       createdAt: serverTimestamp(),
     });
-    return { success: true, inquiryId: docRef.id };
+    inquiryId = docRef.id;
   } catch (error: any) {
     if (error?.code === "permission-denied" || error?.message?.includes("permissions")) {
       console.warn("Firestore Security Rules Note: Permission denied for 'inquiries'. Please update rules in Firebase Console.", error);
-      return { success: true, inquiryId: "INQ-" + Math.floor(100 + Math.random() * 900) };
+    } else {
+      console.error("Failed to create inquiry in Firestore:", error);
     }
-    console.error("Failed to create inquiry in Firestore:", error);
-    return { success: true, inquiryId: "INQ-" + Math.floor(100 + Math.random() * 900) };
   }
+
+  // Trigger Inquiry Receipt Email via Firestore 'mail' collection
+  if (inquiry.email) {
+    const displayRef = inquiryId.length > 6 ? `INQ-${inquiryId.slice(0, 6).toUpperCase()}` : inquiryId;
+    const emailTemplate = getInquiryReceiptEmailTemplate(inquiry, displayRef);
+    
+    sendEmailViaTriggerEmail({
+      to: inquiry.email,
+      message: emailTemplate,
+    }).catch((emailErr) => {
+      console.warn("Trigger Email dispatch warning for inquiry:", emailErr);
+    });
+  }
+
+  return { success: true, inquiryId };
 }
 
 const DB_USERS_KEY = "wildking_db_users";
@@ -682,6 +795,12 @@ export async function saveUserProfileInFirestore(user: UserDoc) {
   }
 }
 
+export function notifyDataUpdated() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("wildking_data_updated"));
+  }
+}
+
 export async function savePackageInFirestore(pkg: SafariPackageDoc) {
   try {
     const cleanedPkg = cleanFirestoreData(pkg);
@@ -695,9 +814,23 @@ export async function savePackageInFirestore(pkg: SafariPackageDoc) {
       { merge: true }
     );
     console.log("Successfully saved package to Firestore:", pkg.id);
+    notifyDataUpdated();
     return { success: true };
   } catch (error: any) {
     console.error("Failed to save package in Firestore:", error);
+    return { success: false, error: error.message || error };
+  }
+}
+
+export async function deletePackageFromFirestore(packageId: string) {
+  try {
+    const pkgRef = doc(db, "packages", packageId);
+    await deleteDoc(pkgRef);
+    console.log("Successfully deleted package from Firestore:", packageId);
+    notifyDataUpdated();
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to delete package from Firestore:", error);
     return { success: false, error: error.message || error };
   }
 }
@@ -715,9 +848,27 @@ export async function saveParkInFirestore(park: ParkDestinationDoc) {
       { merge: true }
     );
     console.log("Successfully saved safari park to Firestore:", park.id);
+    notifyDataUpdated();
     return { success: true };
   } catch (error: any) {
     console.error("Failed to save safari park in Firestore:", error);
+    return { success: false, error: error.message || error };
+  }
+}
+
+export async function deleteParkFromFirestore(parkId: string) {
+  try {
+    const parkRef = doc(db, "destinations", parkId);
+    await deleteDoc(parkRef);
+    console.log("Successfully deleted safari park from Firestore:", parkId);
+    notifyDataUpdated();
+    return { success: true };
+  } catch (error: any) {
+    if (error?.code === "permission-denied" || error?.message?.includes("permissions")) {
+      console.warn("Firestore Security Rules Note: Permission denied for deleting 'destinations'.", error);
+    } else {
+      console.error("Failed to delete safari park from Firestore:", error);
+    }
     return { success: false, error: error.message || error };
   }
 }
@@ -735,9 +886,23 @@ export async function saveVehicleInFirestore(vehicle: JeepVehicleDoc) {
       { merge: true }
     );
     console.log("Successfully saved jeep vehicle to Firestore:", vehicle.id);
+    notifyDataUpdated();
     return { success: true };
   } catch (error: any) {
     console.error("Failed to save jeep vehicle in Firestore:", error);
+    return { success: false, error: error.message || error };
+  }
+}
+
+export async function deleteVehicleFromFirestore(vehicleId: string) {
+  try {
+    const vehicleRef = doc(db, "fleet", vehicleId);
+    await deleteDoc(vehicleRef);
+    console.log("Successfully deleted vehicle from Firestore:", vehicleId);
+    notifyDataUpdated();
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to delete vehicle from Firestore:", error);
     return { success: false, error: error.message || error };
   }
 }

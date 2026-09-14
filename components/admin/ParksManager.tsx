@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ParkDestinationDoc } from "@/lib/types/firestore";
-import { saveParkInFirestore } from "@/lib/firestore-service";
+import { saveParkInFirestore, deleteParkFromFirestore } from "@/lib/firestore-service";
 import { useToast } from "@/context/ToastContext";
-import { Trees, Plus, MapPin, Calendar, Sparkles, Edit3, X, Check, Search, Info, Trash2, Image as ImageIcon, Star } from "lucide-react";
+import { Trees, Plus, MapPin, Calendar, Sparkles, Edit3, X, Check, CheckCircle2, Search, Info, Trash2, ExternalLink, Image as ImageIcon, Star } from "lucide-react";
 
 interface ParksManagerProps {
   destinations: ParkDestinationDoc[];
@@ -13,12 +14,16 @@ interface ParksManagerProps {
 const DEFAULT_PARK_IMAGE = "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=1000";
 
 export default function ParksManager({ destinations }: ParksManagerProps) {
+  const router = useRouter();
   const { showSuccess, showError, showWarning } = useToast();
   const [parksList, setParksList] = useState<ParkDestinationDoc[]>(destinations);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [editingPark, setEditingPark] = useState<ParkDestinationDoc | null>(null);
+  const [deletingPark, setDeletingPark] = useState<ParkDestinationDoc | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [statusBanner, setStatusBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Form states for creating new park
   const [newName, setNewName] = useState("");
@@ -111,8 +116,68 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!deletingPark) return;
+
+    setIsDeleting(true);
+    setStatusBanner(null);
+
+    try {
+      const targetPark = deletingPark;
+      const res = await deleteParkFromFirestore(targetPark.id);
+
+      if (res.success) {
+        setParksList((prev) => prev.filter((p) => p.id !== targetPark.id));
+        const successMsg = `Safari National Park "${targetPark.name}" was deleted successfully!`;
+        showSuccess("Deletion Successful", successMsg);
+        setStatusBanner({ type: "success", message: successMsg });
+        if (editingPark?.id === targetPark.id) setEditingPark(null);
+        setDeletingPark(null);
+      } else {
+        const errorMsg = res.error
+          ? `Failed to delete "${targetPark.name}": ${res.error}`
+          : `Failed to delete safari park "${targetPark.name}". Please verify Firestore database permissions.`;
+        showError("Deletion Failed", errorMsg);
+        setStatusBanner({ type: "error", message: errorMsg });
+      }
+    } catch (err: any) {
+      console.error("Failed to delete park:", err);
+      const errorMsg = `An unexpected error occurred while deleting "${deletingPark.name}".`;
+      showError("Deletion Failed", errorMsg);
+      setStatusBanner({ type: "error", message: errorMsg });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 font-sans">
+      {/* Inline Status Banner */}
+      {statusBanner && (
+        <div
+          className={`p-4 rounded-xl border flex items-center justify-between text-xs font-semibold shadow-lg transition-all ${
+            statusBanner.type === "success"
+              ? "bg-emerald-950/90 border-emerald-500/50 text-emerald-300"
+              : "bg-red-950/90 border-red-500/50 text-red-300"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {statusBanner.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <Info className="w-4 h-4 text-red-400 shrink-0" />
+            )}
+            <span>{statusBanner.message}</span>
+          </div>
+          <button
+            onClick={() => setStatusBanner(null)}
+            className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Header & Add Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 p-5 rounded-2xl border border-emerald-800/40 shadow-lg">
         <div>
@@ -167,7 +232,12 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
               {filteredParks.map((park) => {
                 const parkGallery = park.gallery && park.gallery.length > 0 ? park.gallery : [park.image];
                 return (
-                  <tr key={park.id} className="hover:bg-slate-800/50 transition-colors group">
+                  <tr
+                    key={park.id}
+                    onClick={() => router.push(`/parks/${park.slug || park.id}?admin=true`)}
+                    title="Click row to open park single page with Admin Info"
+                    className="hover:bg-slate-800/70 transition-colors group cursor-pointer"
+                  >
                     {/* Name & Cover Image + Gallery count badge */}
                     <td className="py-4 px-5">
                       <div className="flex items-center space-x-3.5">
@@ -184,8 +254,9 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
                           )}
                         </div>
                         <div>
-                          <h4 className="font-bold text-white text-sm group-hover:text-amber-400 transition-colors">
-                            {park.name}
+                          <h4 className="font-bold text-white text-sm group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                            <span>{park.name}</span>
+                            <ExternalLink className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </h4>
                           <p className="text-[11px] text-slate-400 line-clamp-1 max-w-xs">{park.tagline}</p>
                         </div>
@@ -230,16 +301,33 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
 
                     {/* Action */}
                     <td className="py-4 px-5 text-right">
-                      <button
-                        onClick={() => setEditingPark({
-                          ...park,
-                          gallery: park.gallery && park.gallery.length > 0 ? park.gallery : [park.image]
-                        })}
-                        className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-md"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit Park</span>
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPark({
+                              ...park,
+                              gallery: park.gallery && park.gallery.length > 0 ? park.gallery : [park.image],
+                            });
+                          }}
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-md"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingPark(park);
+                          }}
+                          title={`Delete ${park.name}`}
+                          className="px-3 py-1.5 bg-red-950/60 hover:bg-red-600 text-red-300 hover:text-white border border-red-800/60 hover:border-red-500 font-bold rounded-lg text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-md"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -652,30 +740,97 @@ export default function ParksManager({ destinations }: ParksManagerProps) {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => setEditingPark(null)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs hover:bg-slate-700 cursor-pointer"
+                  onClick={() => {
+                    const target = editingPark;
+                    setEditingPark(null);
+                    setDeletingPark(target);
+                  }}
+                  className="px-3.5 py-2 bg-red-950/80 hover:bg-red-600 text-red-300 hover:text-white border border-red-800/80 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  Cancel
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Park</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
-                >
-                  {isSaving ? (
-                    <span>Saving...</span>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 stroke-[3]" />
-                      <span>Save Changes</span>
-                    </>
-                  )}
-                </button>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPark(null)}
+                    className="px-4 py-2 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs hover:bg-slate-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    {isSaving ? (
+                      <span>Saving...</span>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingPark && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-800/60 max-w-md w-full rounded-2xl p-6 space-y-4 shadow-2xl relative text-slate-200 text-xs">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="w-10 h-10 rounded-full bg-red-950 border border-red-800/80 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-white">Delete National Park?</h3>
+                <p className="text-xs text-slate-400">This action will remove the park from public destinations.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-xs">
+              <p className="font-bold text-white mb-1">{deletingPark.name}</p>
+              <p className="text-slate-400 line-clamp-1">{deletingPark.tagline}</p>
+            </div>
+
+            <p className="text-[11px] text-red-300 font-medium bg-red-950/40 p-2.5 rounded-lg border border-red-900/40">
+              ⚠️ Warning: Deleting this safari park will permanently unpublish it from the catalog.
+            </p>
+
+            <div className="pt-2 flex justify-end space-x-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setDeletingPark(null)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs hover:bg-slate-700 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-5 py-2 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <span>Deleting...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

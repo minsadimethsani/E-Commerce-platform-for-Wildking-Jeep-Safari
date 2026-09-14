@@ -62,6 +62,13 @@ export interface ParkDestinationDoc {
   bestSeason: string;
   keyFact: string;
   distanceFromColombo: string;
+  description?: string;
+  areaKm2?: string;
+  establishedYear?: string;
+  operatingHours?: string;
+  highlights?: string[];
+  gates?: { name: string; location: string }[];
+  wildlifeGuide?: { species: string; bestTime: string; status: string }[];
   updatedAt?: Timestamp | string;
 }
 
@@ -155,3 +162,25 @@ export interface PromotionDoc {
   timesUsed: number;
   isActive: boolean;
 }
+
+export interface SubscriberDoc {
+  id?: string;
+  email: string;
+  status: "active" | "unsubscribed";
+  source?: string;
+  subscribedAt: Timestamp | string;
+}
+
+export interface MailMessage {
+  subject: string;
+  text?: string;
+  html: string;
+}
+
+export interface TriggerEmailDoc {
+  id?: string;
+  to: string | string[];
+  message: MailMessage;
+  createdAt?: Timestamp | string;
+}
+

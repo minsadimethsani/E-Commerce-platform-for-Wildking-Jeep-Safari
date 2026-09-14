@@ -1,15 +1,47 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Compass, Phone, Mail, MapPin, Send, ShieldCheck, Heart, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Compass, Phone, Mail, MapPin, Send, ShieldCheck, Heart, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
+import { subscribeToAlertsInFirestore } from '../lib/firestore-service';
+import { useToast } from '../context/ToastContext';
 
 export const Footer: React.FC = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleNewsletter = (e: React.FormEvent) => {
+  const { showSuccess, showError, showWarning } = useToast();
+
+  const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newsletterEmail) setSubscribed(true);
+    setErrorMessage('');
+
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      setErrorMessage('Please enter a valid email address.');
+      showWarning('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await subscribeToAlertsInFirestore(newsletterEmail, 'website_footer');
+
+      if (result.success) {
+        setSubscribed(true);
+        showSuccess('Subscribed to Alerts!', 'Welcome email queued via Firestore Trigger Email.');
+      } else {
+        setErrorMessage(result.error || 'Failed to subscribe. Please try again.');
+        showError('Subscription Failed', result.error || 'Could not save subscription.');
+      }
+    } catch (err: any) {
+      console.error('Subscription error:', err);
+      setErrorMessage('An unexpected error occurred. Please try again.');
+      showError('Subscription Error', 'Could not process subscription.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -127,7 +159,7 @@ export const Footer: React.FC = () => {
 
             {subscribed ? (
               <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>Subscribed to Wildlife Alerts!</span>
               </div>
             ) : (
@@ -136,18 +168,32 @@ export const Footer: React.FC = () => {
                   <input
                     type="email"
                     required
+                    disabled={isSubmitting}
                     placeholder="Enter your email"
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
-                    className="w-full bg-[#09150e] border border-emerald-800/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                    className="w-full bg-[#09150e] border border-emerald-800/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 disabled:opacity-50"
                   />
                 </div>
+                {errorMessage && (
+                  <p className="text-[11px] text-red-400 font-medium">{errorMessage}</p>
+                )}
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-emerald-950 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-amber-300 transition-colors flex items-center justify-center gap-1.5"
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-emerald-950 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-amber-300 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Subscribe</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Subscribing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Subscribe</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}

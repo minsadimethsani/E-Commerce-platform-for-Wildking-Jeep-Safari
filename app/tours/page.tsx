@@ -6,7 +6,9 @@ import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../components/AccountModal';
-import { SAFARI_PACKAGES, SafariPackage } from '../../data/packages';
+import { SAFARI_PACKAGES, SafariPackage, PARK_DESTINATIONS } from '../../data/packages';
+import { getPackagesFromFirestore, getDestinationsFromFirestore } from '../../lib/firestore-service';
+import { SafariPackageDoc, ParkDestinationDoc } from '../../lib/types/firestore';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -43,6 +45,27 @@ function ToursContent() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recommended' | 'price-low' | 'price-high' | 'rating'>('recommended');
 
+  // Dynamic Live Firestore Data
+  const [packagesList, setPackagesList] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
+  const [destinationsList, setDestinationsList] = useState<ParkDestinationDoc[]>(PARK_DESTINATIONS as ParkDestinationDoc[]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const pkgs = await getPackagesFromFirestore();
+        if (pkgs && pkgs.length > 0) setPackagesList(pkgs);
+        const dests = await getDestinationsFromFirestore();
+        if (dests && dests.length > 0) setDestinationsList(dests);
+      } catch (err) {
+        console.error("Error fetching data in ToursPage:", err);
+      }
+    };
+    fetchData();
+
+    window.addEventListener("wildking_data_updated", fetchData);
+    return () => window.removeEventListener("wildking_data_updated", fetchData);
+  }, []);
+
   // Synchronize state with URL search parameters
   useEffect(() => {
     if (parkUrlParam) {
@@ -54,30 +77,32 @@ function ToursContent() {
   }, [parkUrlParam, searchUrlParam]);
 
   const handleOpenBooking = (pkg?: SafariPackage) => {
-    setSelectedPackage(pkg || SAFARI_PACKAGES[0]);
+    setSelectedPackage(pkg || (packagesList[0] as SafariPackage) || SAFARI_PACKAGES[0]);
     setIsBookingOpen(true);
   };
 
   // Filter & Sort logic
-  const filteredTours = SAFARI_PACKAGES.filter((pkg) => {
+  const filteredTours = packagesList.filter((pkg) => {
     const matchesSearch =
-      pkg.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pkg.parkName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pkg.tagline.toLowerCase().includes(searchQuery.toLowerCase());
+      (pkg.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (pkg.parkName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (pkg.tagline || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesPark = selectedPark === 'all' || pkg.park.toLowerCase() === selectedPark.toLowerCase();
+    const matchesPark = selectedPark === 'all' || (pkg.park || '').toLowerCase() === selectedPark.toLowerCase();
     const matchesTimeSlot =
       selectedTimeSlot === 'all' ||
-      (selectedTimeSlot === 'dawn' && pkg.timeSlot.includes('Dawn')) ||
-      (selectedTimeSlot === 'dusk' && pkg.timeSlot.includes('Dusk')) ||
-      (selectedTimeSlot === 'fullday' && pkg.timeSlot.includes('Full-Day'));
+      (selectedTimeSlot === 'dawn' && (pkg.timeSlot || '').includes('Dawn')) ||
+      (selectedTimeSlot === 'dusk' && (pkg.timeSlot || '').includes('Dusk')) ||
+      (selectedTimeSlot === 'fullday' && (pkg.timeSlot || '').includes('Full-Day'));
 
     return matchesSearch && matchesPark && matchesTimeSlot;
   }).sort((a, b) => {
-    if (sortBy === 'price-low') return a.priceUsd - b.priceUsd;
-    if (sortBy === 'price-high') return b.priceUsd - a.priceUsd;
-    if (sortBy === 'rating') return b.rating - a.rating;
-    return b.reviewsCount - a.reviewsCount; // recommended
+    const priceA = a.priceLkr || 0;
+    const priceB = b.priceLkr || 0;
+    if (sortBy === 'price-low') return priceA - priceB;
+    if (sortBy === 'price-high') return priceB - priceA;
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    return (b.reviewsCount || 0) - (a.reviewsCount || 0); // recommended
   });
 
   return (
@@ -134,23 +159,27 @@ function ToursContent() {
 
             {/* Park Selector Tabs */}
             <div className="md:col-span-5 flex flex-wrap items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-bold">
-              {[
-                { id: 'all', label: 'All Parks' },
-                { id: 'yala', label: 'Yala' },
-                { id: 'udawalawe', label: 'Udawalawe' },
-                { id: 'wilpattu', label: 'Wilpattu' },
-                { id: 'minneriya', label: 'Minneriya' }
-              ].map((p) => (
+              <button
+                onClick={() => setSelectedPark('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  selectedPark === 'all'
+                    ? 'bg-amber-400 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All Parks
+              </button>
+              {destinationsList.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setSelectedPark(p.id)}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
-                    selectedPark === p.id
+                    selectedPark === p.id.toLowerCase()
                       ? 'bg-amber-400 text-slate-950 shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  {p.label}
+                  {p.name.replace(' National Park', '')}
                 </button>
               ))}
             </div>

@@ -1,29 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../components/AccountModal';
 import { PARK_DESTINATIONS, SAFARI_PACKAGES, SafariPackage, ParkDestination } from '../../data/packages';
+import { getDestinationsFromFirestore, getPackagesFromFirestore } from '../../lib/firestore-service';
+import { ParkDestinationDoc, SafariPackageDoc } from '../../lib/types/firestore';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
 import {
   Compass,
   MapPin,
   Calendar,
-  ArrowRight,
-  Star,
   Clock,
+  Star,
+  ArrowRight,
   ShieldCheck,
   CheckCircle2,
   Trees,
   Sparkles,
   ChevronRight,
-  Search,
-  Award,
-  Info,
-  Check
+  Layers,
+  Award
 } from 'lucide-react';
 
 export default function DestinationsPage() {
@@ -38,17 +38,49 @@ export default function DestinationsPage() {
   // Filter state
   const [activeParkId, setActiveParkId] = useState<string>('all');
 
+  // Live Firestore Data States
+  const [destinationsList, setDestinationsList] = useState<ParkDestinationDoc[]>(PARK_DESTINATIONS as ParkDestinationDoc[]);
+  const [packagesList, setPackagesList] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const firestoreDests = await getDestinationsFromFirestore();
+        if (firestoreDests && firestoreDests.length > 0) {
+          setDestinationsList(firestoreDests);
+        }
+        const firestorePkgs = await getPackagesFromFirestore();
+        if (firestorePkgs && firestorePkgs.length > 0) {
+          setPackagesList(firestorePkgs);
+        }
+      } catch (err) {
+        console.error("Error fetching data in DestinationsPage:", err);
+      }
+    };
+
+    fetchData();
+
+    window.addEventListener("wildking_data_updated", fetchData);
+    return () => {
+      window.removeEventListener("wildking_data_updated", fetchData);
+    };
+  }, []);
+
   const handleOpenBooking = (pkg?: SafariPackage) => {
-    setSelectedPackage(pkg || SAFARI_PACKAGES[0]);
+    setSelectedPackage(pkg || (packagesList[0] as SafariPackage) || SAFARI_PACKAGES[0]);
     setIsBookingOpen(true);
   };
 
   const filteredParks = activeParkId === 'all'
-    ? PARK_DESTINATIONS
-    : PARK_DESTINATIONS.filter((park) => park.id === activeParkId);
+    ? destinationsList
+    : destinationsList.filter((park) => park.id.toLowerCase() === activeParkId.toLowerCase());
 
   const getPackagesForPark = (parkId: string) => {
-    return SAFARI_PACKAGES.filter((pkg) => pkg.park === parkId);
+    const cleanParkId = parkId.toLowerCase();
+    return packagesList.filter((pkg) => {
+      const pkgPark = (pkg.park || '').toLowerCase();
+      return pkgPark === cleanParkId || (pkg.parkName && pkg.parkName.toLowerCase().includes(cleanParkId));
+    });
   };
 
   return (
@@ -95,7 +127,7 @@ export default function DestinationsPage() {
             >
               All Sanctuaries
             </button>
-            {PARK_DESTINATIONS.map((park) => (
+            {destinationsList.map((park) => (
               <button
                 key={park.id}
                 onClick={() => setActiveParkId(park.id)}
@@ -312,7 +344,7 @@ export default function DestinationsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Check className="w-5 h-5 stroke-[3]" />
+                <CheckCircle2 className="w-5 h-5 stroke-[3]" />
               </div>
               <h4 className="text-base font-bold text-white">What to Wear</h4>
               <p className="text-xs text-slate-400 font-light leading-relaxed">
@@ -322,7 +354,7 @@ export default function DestinationsPage() {
 
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Check className="w-5 h-5 stroke-[3]" />
+                <CheckCircle2 className="w-5 h-5 stroke-[3]" />
               </div>
               <h4 className="text-base font-bold text-white">Camera & Optics</h4>
               <p className="text-xs text-slate-400 font-light leading-relaxed">
@@ -332,7 +364,7 @@ export default function DestinationsPage() {
 
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Check className="w-5 h-5 stroke-[3]" />
+                <CheckCircle2 className="w-5 h-5 stroke-[3]" />
               </div>
               <h4 className="text-base font-bold text-white">Eco-Code & Safety</h4>
               <p className="text-xs text-slate-400 font-light leading-relaxed">

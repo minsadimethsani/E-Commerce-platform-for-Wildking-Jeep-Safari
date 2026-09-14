@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '../../../components/Navbar';
 import { Footer } from '../../../components/Footer';
 import { BookingModal } from '../../../components/BookingModal';
 import { AccountModal, UserProfile } from '../../../components/AccountModal';
 import { PARK_DESTINATIONS, SAFARI_PACKAGES, JEEP_FLEET, SafariPackage } from '../../../data/packages';
-import { getPackagesFromFirestore } from '../../../lib/firestore-service';
-import { SafariPackageDoc } from '../../../lib/types/firestore';
+import { getPackagesFromFirestore, getDestinationsFromFirestore } from '../../../lib/firestore-service';
+import { SafariPackageDoc, ParkDestinationDoc } from '../../../lib/types/firestore';
+import { goBackWithFallback } from '../../../lib/navigation-utils';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -18,6 +19,7 @@ import {
   Clock,
   Star,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   CheckCircle2,
   Trees,
@@ -29,18 +31,19 @@ import {
   Layers,
   Car,
   Footprints,
-  Navigation
+  Navigation,
+  Database,
+  Edit3,
+  ExternalLink,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export default function ParkDetailPage() {
+  const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const parkId = rawId ? rawId.toLowerCase() : '';
-
-  // Find matching park by ID or Slug
-  const currentPark = PARK_DESTINATIONS.find(
-    (p) => p.id.toLowerCase() === parkId || p.slug.toLowerCase() === parkId
-  ) || PARK_DESTINATIONS[0];
 
   const { formatPrice } = useCurrency();
   const { user } = useAuth();
@@ -50,22 +53,35 @@ export default function ParkDetailPage() {
   // Account Modal state
   const [isAccountOpen, setIsAccountOpen] = useState(false);
 
-  // All Safari Packages state (populated from Firestore with local fallback)
+  // Admin View Mode check
+  const isAdminMode = searchParams.get('admin') === 'true' || (user as any)?.role === 'admin';
+
+  // Destinations & Safari Packages state (populated from Firestore with local fallback)
+  const [destinations, setDestinations] = useState<ParkDestinationDoc[]>(PARK_DESTINATIONS as ParkDestinationDoc[]);
   const [allPackages, setAllPackages] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
 
   useEffect(() => {
-    const fetchPackages = async () => {
+    const fetchData = async () => {
       try {
+        const firestoreDests = await getDestinationsFromFirestore();
+        if (firestoreDests && firestoreDests.length > 0) {
+          setDestinations(firestoreDests);
+        }
         const firestorePkgs = await getPackagesFromFirestore();
         if (firestorePkgs && firestorePkgs.length > 0) {
           setAllPackages(firestorePkgs);
         }
       } catch (err) {
-        console.error("Error fetching packages for park detail page:", err);
+        console.error("Error fetching destinations/packages for park detail page:", err);
       }
     };
-    fetchPackages();
+    fetchData();
   }, []);
+
+  // Find matching park by ID, Slug, or Name
+  const currentPark = destinations.find(
+    (p) => p.id.toLowerCase() === parkId || p.slug?.toLowerCase() === parkId || p.name.toLowerCase().includes(parkId)
+  ) || destinations[0];
 
   // Filter safari packages specifically for this park
   const parkPackages = allPackages.filter((pkg) => {
@@ -123,15 +139,121 @@ export default function ParkDetailPage() {
 
       {/* Main Park Detail Content */}
       <section className="py-10 px-4 sm:px-6 lg:px-8 bg-[#050b14]">
-        <div className="max-w-7xl mx-auto space-y-12">
+        <div className="max-w-7xl mx-auto space-y-8">
           
-          {/* Breadcrumb Navigation */}
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-            <a href="/" className="hover:text-amber-400 transition-colors">Home</a>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <a href="/destinations" className="hover:text-amber-400 transition-colors">Destinations</a>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-amber-300 font-bold">{currentPark.name}</span>
+          {/* Admin Information & Quick Controls Bar */}
+          {isAdminMode && (
+            <div className="bg-[#08101e] border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold shrink-0 shadow-inner">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                        Admin Inspection Mode
+                      </span>
+                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Published & Live
+                      </span>
+                    </div>
+                    <h2 className="text-lg font-bold text-white mt-1 font-serif">
+                      Managing: {currentPark.name}
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    onClick={() => goBackWithFallback(router, "/admin?tab=parks")}
+                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-bold transition-all border border-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Admin Panel</span>
+                  </button>
+
+                  <a
+                    href={`/admin?tab=parks`}
+                    className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg"
+                  >
+                    <Edit3 className="w-4 h-4 stroke-[2.5]" />
+                    <span>Edit Park Config</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Admin Metadata Technical Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80">
+                  <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5 text-amber-400" /> Database Identifier
+                  </div>
+                  <div className="font-mono text-amber-300 font-bold text-sm">{currentPark.id}</div>
+                  <div className="text-[11px] text-slate-400 truncate mt-0.5">Slug: {currentPark.slug || currentPark.id}</div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80">
+                  <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-400" /> Location & Access
+                  </div>
+                  <div className="font-bold text-white text-xs">{currentPark.distanceFromColombo}</div>
+                  <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">Optimal: {currentPark.bestSeason}</div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80">
+                  <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-blue-400" /> Media Assets
+                  </div>
+                  <div className="font-bold text-white text-xs">{(currentPark.gallery?.length || 1)} Photos Uploaded</div>
+                  <div className="text-[11px] text-slate-400 truncate mt-0.5">Cover photo verified</div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80">
+                  <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-purple-400" /> Bound Safari Tours
+                  </div>
+                  <div className="font-bold text-white text-xs">{parkPackages.length} Packages Configured</div>
+                  <div className="text-[11px] text-purple-300 font-semibold mt-0.5">Active in Catalog</div>
+                </div>
+              </div>
+
+              {/* Primary Species & Internal Fact Highlights */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-slate-400 uppercase text-[10px]">Primary Species Sightings:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {currentPark.primarySpecies.map((species, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-md bg-emerald-950 border border-emerald-800/60 text-emerald-300 font-semibold text-[11px]">
+                        {species}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="text-slate-400 text-xs">
+                  <span className="font-bold text-slate-300">Highlight Fact:</span> "{currentPark.keyFact}"
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Breadcrumb Navigation & Smart Back Button */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <a href="/" className="hover:text-amber-400 transition-colors">Home</a>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <a href="/destinations" className="hover:text-amber-400 transition-colors">Destinations</a>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-amber-300 font-bold">{currentPark.name}</span>
+            </div>
+
+            <button
+              onClick={() => goBackWithFallback(router, '/destinations')}
+              className="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span>Back to Previous Page</span>
+            </button>
           </div>
 
           {/* Park Hero Card */}
@@ -266,7 +388,7 @@ export default function ParkDetailPage() {
                   'Pristine natural waterholes and riverbank observation points',
                   'High probability of rare wildlife sightings',
                   'Spectacular photography opportunities at golden hour'
-                ]).map((highlight, idx) => (
+                ]).map((highlight: string, idx: number) => (
                   <div
                     key={idx}
                     className="p-4 rounded-2xl bg-[#08101d] border border-slate-800 flex items-start gap-3"
@@ -294,11 +416,11 @@ export default function ParkDetailPage() {
               </div>
 
               <div className="space-y-2.5">
-                {(currentPark.gates || ['Main National Park Entrance Gate']).map((gate, idx) => (
+                {(currentPark.gates || ['Main National Park Entrance Gate']).map((gate: any, idx: number) => (
                   <div key={idx} className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 text-slate-200 font-semibold">
                       <Navigation className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>{gate}</span>
+                      <span>{typeof gate === 'string' ? gate : gate?.name || gate}</span>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                       Active Gate
@@ -345,7 +467,7 @@ export default function ParkDetailPage() {
                   description: 'Large aquatic mammals wallowing in mud flats and shallow marshlands.',
                   sightingSpot: 'Wetland Corridors'
                 }
-              ]).map((animal, idx) => (
+              ]).map((animal: any, idx: number) => (
                 <div key={idx} className="p-6 rounded-2xl bg-[#08101d] border border-slate-800 space-y-3 hover:border-amber-500/40 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
                     <Sparkles className="w-5 h-5 text-amber-400" />

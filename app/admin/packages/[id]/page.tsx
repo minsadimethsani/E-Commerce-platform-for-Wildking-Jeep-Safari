@@ -8,6 +8,7 @@ import { validatePackageForm } from "@/lib/validation";
 import { getPackagesFromFirestore, savePackageInFirestore } from "@/lib/firestore-service";
 import { SAFARI_PACKAGES } from "@/data/packages";
 import { SafariPackageDoc, ParkType, TimeSlotType } from "@/lib/types/firestore";
+import { goBackWithFallback } from "@/lib/navigation-utils";
 import {
   ArrowLeft,
   Save,
@@ -207,9 +208,9 @@ export default function SingleAdminPackagePage({ params }: SinglePackagePageProp
       <div className="bg-slate-900/90 border border-emerald-800/40 p-4 md:p-5 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => router.push("/admin?tab=packages")}
+            onClick={() => goBackWithFallback(router, "/admin?tab=packages")}
             className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-700"
-            title="Back to Packages list"
+            title="Back to previous page"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>

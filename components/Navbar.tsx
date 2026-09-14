@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Compass, Menu, X, ChevronDown, Sparkles, User, MapPin, ArrowRight, Trees, Search } from 'lucide-react';
 import { UserProfile } from './AccountModal';
 import { PARK_DESTINATIONS } from '../data/packages';
+import { getDestinationsFromFirestore } from '../lib/firestore-service';
+import { ParkDestinationDoc } from '../lib/types/firestore';
 import { useCurrency, CurrencyCode, CURRENCY_CONFIGS } from '../context/CurrencyContext';
 
 interface NavbarProps {
@@ -31,6 +33,24 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isMobileParksOpen, setIsMobileParksOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [destinationsList, setDestinationsList] = useState<ParkDestinationDoc[]>(PARK_DESTINATIONS as ParkDestinationDoc[]);
+
+  useEffect(() => {
+    const fetchDests = async () => {
+      try {
+        const data = await getDestinationsFromFirestore();
+        if (data && data.length > 0) {
+          setDestinationsList(data);
+        }
+      } catch (e) {
+        console.error("Error fetching navbar destinations:", e);
+      }
+    };
+    fetchDests();
+    window.addEventListener("wildking_data_updated", fetchDests);
+    return () => window.removeEventListener("wildking_data_updated", fetchDests);
+  }, []);
 
   const currencyDropdownRef = useRef<HTMLDivElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
@@ -145,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isMegaMenuOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[480px] bg-[#0b1320] border border-amber-500/30 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-2 gap-3">
-                    {PARK_DESTINATIONS.map((park) => (
+                    {destinationsList.map((park) => (
                       <div
                         key={park.id}
                         className="group/park p-2.5 rounded-xl hover:bg-amber-500/10 transition-colors border border-transparent hover:border-amber-500/20 space-y-1.5"
@@ -452,7 +472,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {isMobileParksOpen && (
                 <div className="pl-3 space-y-2 border-l border-amber-500/30 ml-1 py-1">
-                  {PARK_DESTINATIONS.map((park) => (
+                  {destinationsList.map((park) => (
                     <div key={park.id} className="flex items-center justify-between py-1">
                       <a
                         href={`/tours?park=${park.id}`}
