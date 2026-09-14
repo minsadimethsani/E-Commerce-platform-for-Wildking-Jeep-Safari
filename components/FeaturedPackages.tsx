@@ -1,10 +1,8 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SAFARI_PACKAGES, SafariPackage } from '../data/packages';
 import { getPackagesFromFirestore } from '../lib/firestore-service';
 import { SafariPackageDoc } from '../lib/types/firestore';
-import { Clock, ArrowRight } from 'lucide-react';
+import { Clock, ArrowRight, ChevronLeft, ChevronRight, Compass } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 
 interface FeaturedPackagesProps {
@@ -22,6 +20,11 @@ export const FeaturedPackages: React.FC<FeaturedPackagesProps> = ({
   const { formatPrice } = useCurrency();
   const [selectedParkTab, setSelectedParkTab] = useState<string>(activeFilterPark);
   const [allPackages, setAllPackages] = useState<SafariPackageDoc[]>(SAFARI_PACKAGES as SafariPackageDoc[]);
+  
+  // Carousel Navigation & Scroll State
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -44,6 +47,30 @@ export const FeaturedPackages: React.FC<FeaturedPackagesProps> = ({
     return pkgPark === tabLower || (pkg.parkName && pkg.parkName.toLowerCase().includes(tabLower));
   });
 
+  const updateScrollButtons = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    updateScrollButtons();
+    window.addEventListener('resize', updateScrollButtons);
+    return () => window.removeEventListener('resize', updateScrollButtons);
+  }, [allPackages, selectedParkTab]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = scrollRef.current.clientWidth * 0.75;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   return (
     <section id="safaris" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#050b14] relative overflow-hidden font-sans">
       {/* Background Subtle Ambient Glows */}
@@ -52,7 +79,7 @@ export const FeaturedPackages: React.FC<FeaturedPackagesProps> = ({
 
       <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         {/* Section Header with Title & Park Filter Tabs */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h2 className="text-3xl sm:text-5xl font-black text-white font-serif tracking-tight uppercase">
               Featured Safari Packages
@@ -83,84 +110,133 @@ export const FeaturedPackages: React.FC<FeaturedPackagesProps> = ({
           </div>
         </div>
 
-        {/* 5-Column Responsive Grid Layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
-          {filteredPackages.map((pkg) => (
-            <div
-              key={pkg.id}
-              className="group flex flex-col justify-between w-full bg-[#08101d] border border-slate-800 rounded-none overflow-hidden shadow-xl hover:border-amber-500/60 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1"
-            >
-              {/* Media Cover Image - Clean without text/badge overlays */}
-              <a href={`/safari?id=${pkg.id}`} className="relative h-44 sm:h-48 w-full rounded-none overflow-hidden bg-slate-950 block group">
-                <img
-                  src={pkg.image || FALLBACK_IMAGE}
-                  alt={pkg.title}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.onerror = null;
-                    target.src = FALLBACK_IMAGE;
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
-                />
-                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
-              </a>
+        {/* Carousel Relative Wrapper with Aligned Navigation Arrows */}
+        <div className="relative group/carousel">
+          {/* Left Arrow Button aligned with cards row */}
+          <button
+            onClick={() => handleScroll('left')}
+            disabled={!canScrollLeft}
+            aria-label="Previous packages"
+            className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-5 z-20 w-11 h-11 rounded-full border backdrop-blur-md flex items-center justify-center transition-all duration-300 cursor-pointer shadow-2xl ${
+              canScrollLeft
+                ? 'bg-slate-950/90 border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 hover:scale-110'
+                : 'bg-slate-950/40 border-slate-900 text-slate-700 opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+          </button>
 
-              {/* Card Body - Package Title, Description, Duration/Time Period, Price & Book Now CTA */}
-              <div className="p-4 bg-[#08101d] flex flex-col justify-between space-y-3 flex-1">
-                <div className="space-y-2">
-                  {/* Package Title */}
-                  <a href={`/safari?id=${pkg.id}`} className="block group-hover:text-amber-400 transition-colors">
-                    <h3 className="text-xs font-black text-white font-serif uppercase tracking-wider line-clamp-2 min-h-[2.25rem]">
-                      {pkg.title}
-                    </h3>
-                  </a>
+          {/* Right Arrow Button aligned with cards row */}
+          <button
+            onClick={() => handleScroll('right')}
+            disabled={!canScrollRight}
+            aria-label="Next packages"
+            className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-5 z-20 w-11 h-11 rounded-full border backdrop-blur-md flex items-center justify-center transition-all duration-300 cursor-pointer shadow-2xl ${
+              canScrollRight
+                ? 'bg-slate-950/90 border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 hover:scale-110'
+                : 'bg-slate-950/40 border-slate-900 text-slate-700 opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+          </button>
 
-                  {/* Description */}
-                  <p className="text-[11px] text-slate-300 font-light leading-relaxed line-clamp-2 min-h-[2rem]">
-                    {pkg.description || pkg.tagline}
-                  </p>
+          {/* Horizontal Carousel Container */}
+          <div
+            ref={scrollRef}
+            onScroll={updateScrollButtons}
+            className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 pt-1 snap-x snap-mandatory scroll-smooth [::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] items-stretch"
+          >
+            {filteredPackages.slice(0, 8).map((pkg) => (
+              <div
+                key={pkg.id}
+                className="group flex flex-col justify-between w-[280px] sm:w-[300px] shrink-0 snap-start bg-transparent border-0 rounded-none shadow-none transition-all duration-300"
+              >
+                {/* Media Cover Image - Top item with rounded corners */}
+                <a href={`/safari?id=${pkg.id}`} className="relative h-48 sm:h-52 w-full rounded-2xl overflow-hidden bg-slate-950 block">
+                  <img
+                    src={pkg.image || FALLBACK_IMAGE}
+                    alt={pkg.title}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = FALLBACK_IMAGE;
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
+                  />
+                  <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+                </a>
 
-                  {/* Time Period / Duration */}
-                  <div className="flex items-center gap-1.5 pt-1 text-[11px] text-amber-300 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
-                  </div>
-                </div>
+                {/* Content & Details - Placed directly underneath image without box styling or padding */}
+                <div className="pt-3.5 flex flex-col justify-between space-y-3 flex-1">
+                  <div className="space-y-1.5">
+                    {/* Package Title */}
+                    <a href={`/safari?id=${pkg.id}`} className="block group-hover:text-amber-400 transition-colors">
+                      <h3 className="text-xs font-black text-white font-serif uppercase tracking-wider leading-snug">
+                        {pkg.title}
+                      </h3>
+                    </a>
 
-                {/* Price & Book Now CTA */}
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">From</span>
-                    <div className="text-sm sm:text-base font-black text-amber-400 font-sans">
-                      {formatPrice(pkg.priceLkr)}
+                    {/* Time Period / Duration */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-amber-300 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
                     </div>
                   </div>
 
-                  <a
-                    href={`/safari?id=${pkg.id}`}
-                    className="px-3 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1 shrink-0"
-                  >
-                    <span>Book</span>
-                    <ArrowRight className="w-3 h-3 stroke-[3]" />
-                  </a>
+                  {/* Price & Book CTA - Clean bottom action row without inner horizontal divider line */}
+                  <div className="pt-1 flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">From</span>
+                      <div className="text-sm sm:text-base font-black text-amber-400 font-sans">
+                        {formatPrice(pkg.priceLkr)}
+                      </div>
+                    </div>
+
+                    <a
+                      href={`/safari?id=${pkg.id}`}
+                      className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1 shrink-0 rounded-xl"
+                    >
+                      <span>BOOK</span>
+                      <ArrowRight className="w-3 h-3 stroke-[3]" />
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+
+            {/* 9th Card: "View All Packages" CTA Card */}
+            <a
+              href="/packages"
+              className="group flex flex-col items-center justify-center text-center w-[280px] sm:w-[300px] shrink-0 snap-start bg-slate-900/50 border border-slate-800 hover:border-amber-500/60 rounded-2xl p-6 space-y-4 shadow-none transition-all duration-300 hover:-translate-y-1 cursor-pointer min-h-[320px]"
+            >
+              <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 group-hover:bg-amber-400 group-hover:text-slate-950 flex items-center justify-center text-amber-400 shadow-lg transition-all duration-300">
+                <Compass className="w-8 h-8 stroke-[2] group-hover:rotate-45 transition-transform duration-500" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-black uppercase tracking-widest text-white group-hover:text-amber-400 transition-colors font-serif">
+                  View All Packages
+                </h3>
+                <p className="text-xs text-slate-400 font-medium max-w-[200px] mx-auto leading-relaxed">
+                  Explore all Sri Lanka safari expeditions and custom itineraries
+                </p>
+              </div>
+
+              <div className="inline-flex items-center gap-1 text-xs font-black uppercase text-amber-400 tracking-wider pt-1 group-hover:translate-x-1 transition-transform">
+                <span>Browse Directory</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
+              </div>
+            </a>
+          </div>
         </div>
 
-        {/* View All Packages Footer CTA */}
-        <div className="pt-4 flex justify-center">
-          <a
-            href="/tours"
-            className="px-8 py-3.5 bg-[#08101d] hover:bg-slate-900 text-white hover:text-amber-400 border border-slate-800 hover:border-amber-500/50 rounded-xl font-bold text-xs uppercase tracking-widest transition-all duration-300 shadow-xl inline-flex items-center gap-2 group cursor-pointer"
-          >
-            <span>Explore All Packages</span>
-            <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
-          </a>
+        {/* Counter Info Bar */}
+        <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <p className="text-xs text-slate-400 font-medium">
+            Showing <span className="text-amber-400 font-bold">{Math.min(filteredPackages.length, 8)}</span> of <span className="text-white font-bold">{filteredPackages.length}</span> Featured Expeditions
+          </p>
         </div>
       </div>
     </section>
   );
 };
-

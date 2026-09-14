@@ -235,58 +235,53 @@ export default function DestinationsPage() {
                       {parkPackages.map((pkg) => (
                         <div
                           key={pkg.id}
-                          className="group bg-[#091322] border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between shadow-xl"
+                          className="group bg-transparent border-0 rounded-none shadow-none transition-all duration-300 flex flex-col justify-between"
                         >
-                          {/* Image Header - Clean without text/badge overlays */}
-                          <a href={`/safari?id=${pkg.id}`} className="relative h-48 w-full overflow-hidden bg-slate-950 block group">
+                          {/* Image Container with rounded-2xl & overflow-hidden */}
+                          <a href={`/safari?id=${pkg.id}`} className="relative h-48 w-full rounded-2xl overflow-hidden bg-slate-950 block">
                             <img
                               src={pkg.image}
                               alt={pkg.title}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
                             />
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                           </a>
 
-                          {/* Card Body - ONLY Package Title, Description, Duration/Time Period, Price & Book Now CTA */}
-                          <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                            <div className="space-y-2">
+                          {/* Content & Details - Placed directly underneath image without box styling or padding */}
+                          <div className="pt-3.5 flex-1 flex flex-col justify-between space-y-3.5">
+                            <div className="space-y-1.5">
                               {/* Title */}
                               <a
                                 href={`/safari?id=${pkg.id}`}
-                                className="block text-base font-bold text-white font-serif hover:text-amber-400 transition-colors line-clamp-2"
+                                className="block text-sm font-black text-white font-serif uppercase tracking-wider hover:text-amber-400 transition-colors leading-snug"
                               >
                                 {pkg.title}
                               </a>
 
-                              {/* Description */}
-                              <p className="text-xs text-slate-400 font-light line-clamp-2">
-                                {pkg.tagline || pkg.description}
-                              </p>
-
                               {/* Time Period / Duration */}
-                              <div className="flex items-center gap-1.5 text-[11px] text-amber-300 font-medium pt-1">
+                              <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
                                 <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                 <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
                               </div>
                             </div>
 
-                            {/* Price & Book Now CTA */}
-                            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                            {/* Price & Book CTA - Clean bottom action row without inner horizontal divider line */}
+                            <div className="pt-1 flex items-center justify-between gap-2">
                               <div>
                                 <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
                                   From
                                 </span>
-                                <div className="text-lg font-extrabold text-amber-400 font-sans">
+                                <div className="text-base sm:text-lg font-black text-amber-400 font-sans">
                                   {formatPrice(pkg.priceLkr)}
                                 </div>
                               </div>
 
                               <button
                                 onClick={() => handleOpenBooking(pkg)}
-                                className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-105 transition-all cursor-pointer"
+                                className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-1 shadow-md shadow-amber-500/20 hover:scale-[1.02] transition-all cursor-pointer"
                               >
-                                <span>Book Now</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
+                                <span>BOOK NOW</span>
+                                <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
                               </button>
                             </div>
                           </div>

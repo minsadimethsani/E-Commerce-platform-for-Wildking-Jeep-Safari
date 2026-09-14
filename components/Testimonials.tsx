@@ -56,35 +56,17 @@ export const Testimonials: React.FC = () => {
 
       <div className="max-w-7xl mx-auto space-y-12 relative z-10">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs font-extrabold uppercase tracking-widest text-amber-400 mb-3">
-              <Award className="w-3.5 h-3.5" />
-              <span>Verified Guest Experiences</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-white font-serif uppercase tracking-tight">
-              Real Safari Sightings & Stories
-            </h2>
-            <p className="text-sm sm:text-base text-zinc-400 mt-2 font-light max-w-xl">
-              Over 1,500+ five-star reviews from international travelers, wildlife photographers, and safari enthusiasts.
-            </p>
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs font-extrabold uppercase tracking-widest text-amber-400">
+            <Award className="w-3.5 h-3.5" />
+            <span>Verified Guest Experiences</span>
           </div>
-
-          <div className="flex items-center gap-4 bg-[#08101d] p-4 rounded-2xl border border-emerald-800/40 shrink-0">
-            <div className="text-center border-r border-emerald-800/50 pr-4">
-              <div className="text-3xl font-black text-amber-400 font-sans">4.98</div>
-              <div className="flex text-amber-400 my-0.5 justify-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                ))}
-              </div>
-              <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">Overall Rating</div>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">TripAdvisor Traveler's Choice</div>
-              <div className="text-xs text-emerald-300 font-semibold">Certified Top 1% Worldwide</div>
-            </div>
-          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-white font-serif uppercase tracking-tight">
+            Real Safari Sightings & Stories
+          </h2>
+          <p className="text-sm sm:text-base text-zinc-400 font-light max-w-xl">
+            Over 1,500+ five-star reviews from international travelers, wildlife photographers, and safari enthusiasts.
+          </p>
         </div>
 
         {/* Slideshow Container (Auto-play with constant interval timer) */}

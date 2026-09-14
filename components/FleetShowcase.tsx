@@ -34,107 +34,23 @@ interface VehicleCardProps {
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=80';
 
 const FleetVehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onOpenBooking, onOpenSpecModal }) => {
-  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
-
-  const vehicleImages = vehicle.images && vehicle.images.length > 0
-    ? vehicle.images
-    : [vehicle.image || FALLBACK_IMAGE];
-
-  const currentPhoto = vehicleImages[activeImageIndex] || vehicleImages[0] || FALLBACK_IMAGE;
-
-  const handleNextPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActiveImageIndex((prev) => (prev + 1) % vehicleImages.length);
-  };
-
-  const handlePrevPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActiveImageIndex((prev) => (prev - 1 + vehicleImages.length) % vehicleImages.length);
-  };
+  const currentPhoto = vehicle.image || vehicle.images?.[0] || FALLBACK_IMAGE;
 
   return (
     <div className="group flex flex-col justify-between bg-[#08101d] border border-slate-800 rounded-none overflow-hidden shadow-xl hover:border-amber-500/60 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1.5">
-      {/* Top Image Showcase Box */}
-      <div className="space-y-2 p-3 sm:p-4 pb-0">
-        <div className="relative h-64 sm:h-72 w-full rounded-none overflow-hidden bg-slate-950 border border-slate-800">
-          <img
-            src={currentPhoto}
-            alt={`${vehicle.name} - Photo ${activeImageIndex + 1}`}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.onerror = null;
-              target.src = FALLBACK_IMAGE;
-            }}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out filter brightness-[0.93] contrast-[1.03] group-hover:brightness-105"
-          />
-          {/* Subtle Dark Gradients & Ring */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
-
-          {/* Top Badges */}
-          <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
-            <div className="px-2.5 py-1 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1 backdrop-blur-sm pointer-events-auto">
-              <ShieldCheck className="w-3 h-3 text-slate-950" />
-              <span>DWC Certified</span>
-            </div>
-
-            {vehicleImages.length > 1 && (
-              <div className="px-2.5 py-1 bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] font-extrabold border border-amber-500/40 flex items-center gap-1 pointer-events-auto shadow-lg">
-                <ImageIcon className="w-3 h-3 text-amber-400" />
-                <span>{activeImageIndex + 1}/{vehicleImages.length}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Image Navigation Arrows */}
-          {vehicleImages.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={handlePrevPhoto}
-                aria-label="Previous Photo"
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/80 hover:bg-amber-400 hover:text-slate-950 text-white border border-slate-700 flex items-center justify-center transition-all shadow-md cursor-pointer z-10"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleNextPhoto}
-                aria-label="Next Photo"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/80 hover:bg-amber-400 hover:text-slate-950 text-white border border-slate-700 flex items-center justify-center transition-all shadow-md cursor-pointer z-10"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </>
-          )}
-
-          {/* Bottom Overlay Info */}
-          <div className="absolute bottom-3 left-3 right-3 z-10 pointer-events-none">
-            <span className="text-[10px] uppercase font-black text-amber-400 tracking-wider block">
-              {vehicle.model}
-            </span>
-          </div>
-        </div>
-
-        {/* Thumbnail Selector Strip */}
-        {vehicleImages.length > 1 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-            {vehicleImages.map((imgUrl, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setActiveImageIndex(idx)}
-                className={`relative w-14 h-10 rounded-none overflow-hidden shrink-0 border transition-all cursor-pointer ${
-                  activeImageIndex === idx
-                    ? 'border-amber-400 ring-2 ring-amber-400/50 opacity-100 scale-105'
-                    : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-600'
-                }`}
-              >
-                <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Top Clean Main Vehicle Image Container */}
+      <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-950">
+        <img
+          src={currentPhoto}
+          alt={vehicle.name}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = FALLBACK_IMAGE;
+          }}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.03]"
+        />
+        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
       </div>
 
       {/* Card Content Body */}

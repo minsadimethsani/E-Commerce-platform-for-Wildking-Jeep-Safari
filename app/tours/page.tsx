@@ -232,42 +232,37 @@ function ToursContent() {
               {filteredTours.map((pkg) => (
                 <div
                   key={pkg.id}
-                  className="group bg-[#08101d] border border-slate-800 rounded-none overflow-hidden hover:border-amber-500/60 transition-all duration-500 flex flex-col justify-between shadow-2xl hover:shadow-amber-500/10"
+                  className="group bg-transparent border-0 rounded-none shadow-none transition-all duration-300 flex flex-col justify-between"
                 >
-                  {/* Image Header - Clean without text/badge overlays */}
-                  <a href={`/safari?id=${pkg.id}`} className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950 block group">
+                  {/* Image Container with rounded-2xl & overflow-hidden */}
+                  <a href={`/safari?id=${pkg.id}`} className="relative h-52 sm:h-56 w-full rounded-2xl overflow-hidden bg-slate-950 block">
                     <img
                       src={pkg.image}
                       alt={pkg.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out filter brightness-[0.95] contrast-[1.02]"
                     />
-                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                   </a>
 
-                  {/* Card Body - Package Title, Description, Duration/Time Period, Price & Book Now CTA */}
-                  <div className="p-5 bg-[#08101d] flex flex-col justify-between space-y-3.5 flex-1">
-                    <div className="space-y-2">
+                  {/* Content & Details - Placed directly underneath image without box styling or padding */}
+                  <div className="pt-3.5 flex flex-col justify-between space-y-3.5 flex-1">
+                    <div className="space-y-1.5">
                       {/* Package Title */}
                       <a href={`/safari?id=${pkg.id}`} className="block group-hover:text-amber-400 transition-colors">
-                        <h3 className="text-sm font-black text-white font-serif uppercase tracking-wider line-clamp-2 min-h-[2.5rem]">
+                        <h3 className="text-sm font-black text-white font-serif uppercase tracking-wider leading-snug">
                           {pkg.title}
                         </h3>
                       </a>
 
-                      {/* Description */}
-                      <p className="text-[11px] text-slate-300 font-light leading-relaxed line-clamp-2 min-h-[2rem]">
-                        {pkg.description || pkg.tagline}
-                      </p>
-
                       {/* Time Period / Duration */}
-                      <div className="flex items-center gap-1.5 pt-1 text-[11px] text-amber-300 font-medium">
+                      <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
                         <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span>{pkg.duration ? pkg.duration.split('(')[0].trim() : 'Expedition'}</span>
                       </div>
                     </div>
 
-                    {/* Price & Book Now CTA */}
-                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+                    {/* Price & Book CTA - Clean bottom action row without inner horizontal divider line */}
+                    <div className="pt-1 flex items-center justify-between gap-3">
                       <div>
                         <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">From</span>
                         <div className="text-base sm:text-lg font-black text-amber-400 font-sans">
@@ -277,9 +272,9 @@ function ToursContent() {
 
                       <a
                         href={`/safari?id=${pkg.id}`}
-                        className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1"
+                        className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1 rounded-xl"
                       >
-                        <span>Book Now</span>
+                        <span>BOOK NOW</span>
                         <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
                       </a>
                     </div>
