@@ -17,7 +17,7 @@ import { BookingDoc, InquiryDoc, SafariPackageDoc, JeepVehicleDoc, ReviewDoc, Pa
 import AdminSidebar, { AdminTab } from "@/components/admin/AdminSidebar";
 import OverviewStats from "@/components/admin/OverviewStats";
 import BookingsManager from "@/components/admin/BookingsManager";
-import InquiriesManager from "@/components/admin/InquiriesManager";
+import InquiriesReviewsManager from "@/components/admin/InquiriesReviewsManager";
 import PackagesManager from "@/components/admin/PackagesManager";
 import ParksManager from "@/components/admin/ParksManager";
 import FleetManager from "@/components/admin/FleetManager";
@@ -290,10 +290,12 @@ export default function AdminPage() {
               />
             )}
 
-            {activeTab === "inquiries" && (
-              <InquiriesManager
+            {(activeTab === "inquiries" || activeTab === "reviews") && (
+              <InquiriesReviewsManager
                 inquiries={inquiries}
+                reviews={reviews}
                 onUpdateStatus={handleUpdateInquiryStatus}
+                initialSubTab={activeTab === "reviews" ? "reviews" : "inquiries"}
               />
             )}
 
@@ -311,10 +313,6 @@ export default function AdminPage() {
 
             {activeTab === "fleet" && (
               <FleetManager fleet={fleet} />
-            )}
-
-            {activeTab === "reviews" && (
-              <ReviewsManager reviews={reviews} />
             )}
 
             {(activeTab === "settings" || activeTab === "roles") && (

@@ -93,6 +93,9 @@ export interface BookingDoc {
   timeSlot: string;
   selectedVehicle?: string;
   guestCount: number;
+  bookingOption?: "full_vehicle" | "individual_seats";
+  vehiclesCount?: number;
+  selectedSeats?: string[];
   customerInfo: CustomerInfo;
   pickupDetails?: PickupDetails;
   totalAmountUsd: number;

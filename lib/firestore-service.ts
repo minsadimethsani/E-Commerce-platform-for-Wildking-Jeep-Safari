@@ -553,6 +553,30 @@ export async function registerUserInFirestore(
   const cleanEmail = email.trim().toLowerCase();
   const hashedPassword = hashPassword(password);
   const now = new Date().toISOString();
+  const docId = cleanEmail.replace(/[^a-z0-9]/g, "_");
+
+  // Pre-check 1: Check if email already exists in local DB cache
+  const localUsers = getLocalDbUsers();
+  if (localUsers[cleanEmail]) {
+    return {
+      success: false,
+      error: "An account with this email address already exists. Please sign in instead.",
+    };
+  }
+
+  // Pre-check 2: Check if email document already exists in Firestore /users/{docId}
+  try {
+    const userDocRef = doc(db, "users", docId);
+    const userSnap = await getDoc(userDocRef);
+    if (userSnap.exists()) {
+      return {
+        success: false,
+        error: "An account with this email address already exists. Please sign in instead.",
+      };
+    }
+  } catch (checkErr) {
+    console.warn("Firestore pre-registration email check note:", checkErr);
+  }
 
   let uid: string | undefined = undefined;
   let firebaseUser: any = null;
@@ -605,7 +629,6 @@ export async function registerUserInFirestore(
     }
   }
 
-  const docId = cleanEmail.replace(/[^a-z0-9]/g, "_");
   const targetUid = uid || docId;
 
   // 2. Write User Document to Firestore `users` Collection directly using UID / docId
@@ -634,7 +657,6 @@ export async function registerUserInFirestore(
   }
 
   // 3. Save to local DB cache for offline/instant client access
-  const localUsers = getLocalDbUsers();
   localUsers[cleanEmail] = {
     ...userProfileData,
     createdAt: now,

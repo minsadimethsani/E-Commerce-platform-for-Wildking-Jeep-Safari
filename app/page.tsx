@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Navbar } from '../components/Navbar';
 import { Hero } from '../components/Hero';
 import { FeaturedPackages } from '../components/FeaturedPackages';
@@ -15,18 +16,33 @@ import { SafariPackage, SAFARI_PACKAGES } from '../data/packages';
 import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
+  const router = useRouter();
   const { user } = useAuth();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountModalTab, setAccountModalTab] = useState<'overview' | 'bookings' | 'settings'>('overview');
   const [selectedPackage, setSelectedPackage] = useState<SafariPackage | null>(null);
   const [activeParkFilter, setActiveParkFilter] = useState('all');
 
+  const handleOpenAccount = (tab: 'overview' | 'bookings' | 'settings' = 'overview') => {
+    setAccountModalTab(tab);
+    setIsAccountOpen(true);
+  };
+
   const handleOpenBookingWithPackage = (pkg: SafariPackage) => {
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent('/safari?id=' + pkg.id));
+      return;
+    }
     setSelectedPackage(pkg);
     setIsBookingOpen(true);
   };
 
   const handleOpenGeneralBooking = () => {
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent('/safari'));
+      return;
+    }
     // Default to Signature Sunset Safari package
     const sunsetPkg = SAFARI_PACKAGES.find(p => p.id === 'sunset-safari-signature') || SAFARI_PACKAGES[0];
     setSelectedPackage(sunsetPkg);
@@ -65,7 +81,8 @@ export default function Home() {
       <Navbar
         onOpenBooking={handleOpenGeneralBooking}
         user={user}
-        onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenAccount={handleOpenAccount}
+        animated
       />
 
       {/* Hero Banner with Two-Column Layout & Translucent Dark Frosted-Glass Card */}
@@ -101,13 +118,14 @@ export default function Home() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedPackage={selectedPackage}
-        onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenAccount={handleOpenAccount}
       />
 
       {/* User Account Authentication & Profile Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
+        initialTab={accountModalTab}
         onOpenBooking={() => {
           handleOpenGeneralBooking();
         }}

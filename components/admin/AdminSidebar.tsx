@@ -44,14 +44,13 @@ export default function AdminSidebar({
   };
 
   const allNavItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: "overview", label: "Overview Stats", icon: <BarChart3 className="w-4 h-4" /> },
-    { id: "bookings", label: "Safari Bookings", icon: <Calendar className="w-4 h-4" />, badge: pendingBookingsCount },
-    { id: "inquiries", label: "Customer Inquiries", icon: <MessageSquare className="w-4 h-4" />, badge: newInquiriesCount },
+    { id: "overview", label: "Dashboard", icon: <BarChart3 className="w-4 h-4" /> },
+    { id: "bookings", label: "Bookings", icon: <Calendar className="w-4 h-4" />, badge: pendingBookingsCount },
+    { id: "inquiries", label: "Inquiries & Reviews", icon: <MessageSquare className="w-4 h-4" />, badge: newInquiriesCount },
     { id: "customers", label: "Customer Accounts", icon: <Users className="w-4 h-4" /> },
     { id: "packages", label: "Safari Packages", icon: <Compass className="w-4 h-4" /> },
     { id: "parks", label: "Safari Parks", icon: <Trees className="w-4 h-4" /> },
     { id: "fleet", label: "Jeep Fleet", icon: <Truck className="w-4 h-4" /> },
-    { id: "reviews", label: "Customer Reviews", icon: <Star className="w-4 h-4" /> },
     { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
     { id: "logout", label: "Logout", icon: <LogOut className="w-4 h-4" /> },
   ];

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   X,
   User,
@@ -28,8 +28,10 @@ import { validateEmail, validatePassword, validateName, validatePhone, validateC
 
 const FEATURED_IMAGE = "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=1200";
 
-export default function UserLoginPage() {
+function UserLoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams ? searchParams.get('redirect') || '/safari' : '/safari';
   const { user, login, register, logout: authLogout } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useToast();
 
@@ -78,7 +80,7 @@ export default function UserLoginPage() {
         showError('Sign In Failed', res.error || 'Invalid email or password.');
       } else {
         showSuccess('Welcome Back!', `Signed in as ${email}`);
-        router.push('/safari');
+        router.push(redirectTarget);
       }
     } finally {
       setIsSubmitting(false);
@@ -120,7 +122,7 @@ export default function UserLoginPage() {
         showError('Registration Failed', res.error || 'Could not create account.');
       } else {
         showSuccess('Account Created!', `Welcome to Wildking Safari, ${regName}!`);
-        router.push('/safari');
+        router.push(redirectTarget);
       }
     } catch (err) {
       setRegBannerError('Failed to create account.');
@@ -135,8 +137,8 @@ export default function UserLoginPage() {
     try {
       const res = await login('alexander.w@wildking-safari.com', 'SafariPass123#');
       if (res.success) {
-        showSuccess('Demo Account Active', 'Signed in as VIP Member Alexander Wright.');
-        router.push('/safari');
+        showSuccess('Demo Account Loaded', 'Welcome back, Alexander!');
+        router.push(redirectTarget);
       }
     } finally {
       setIsSubmitting(false);
@@ -170,7 +172,7 @@ export default function UserLoginPage() {
             </div>
             <div>
               <h2 className="text-base font-extrabold uppercase tracking-wider text-white">
-                {user ? 'Expedition Member Portal' : 'Wildking Authentication'}
+                {user ? 'Expedition Member Portal' : 'Wildking Jeep Safari'}
               </h2>
               <p className="text-xs text-amber-400/90 font-medium">
                 {user ? `Logged in as ${user.name}` : 'Sign in to access your safari bookings'}
@@ -189,30 +191,6 @@ export default function UserLoginPage() {
 
         {/* Center Form Container */}
         <div className="max-w-md w-full mx-auto my-auto space-y-6">
-          
-          {/* Segmented Tab Switcher */}
-          <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-extrabold shadow-inner">
-            <button
-              onClick={() => setActiveTab('login')}
-              className={`py-3 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'login'
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Member Sign In
-            </button>
-            <button
-              onClick={() => setActiveTab('register')}
-              className={`py-3 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'register'
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
 
           {activeTab === 'login' ? (
             /* Sign In Form */
@@ -273,19 +251,18 @@ export default function UserLoginPage() {
                     <span>Signing In...</span>
                   </>
                 ) : (
-                  <span>Sign In to Member Portal</span>
+                  <span>Sign In</span>
                 )}
               </button>
 
-              <div className="pt-4 border-t border-slate-800/80 text-center space-y-2">
-                <span className="text-xs text-slate-400 block font-medium">Want to test with instant VIP access?</span>
+              <div className="text-center pt-3 border-t border-slate-800/80">
+                <span className="text-xs text-slate-400 font-medium">Don't have an account? </span>
                 <button
                   type="button"
-                  onClick={handleDemoSignIn}
-                  className="w-full py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => setActiveTab('register')}
+                  className="text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline cursor-pointer ml-1"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>One-Click Demo VIP Account Login</span>
+                  Sign Up
                 </button>
               </div>
             </form>
@@ -410,6 +387,17 @@ export default function UserLoginPage() {
                   <span>Create Account & Continue</span>
                 )}
               </button>
+
+              <div className="text-center pt-3 border-t border-slate-800/80">
+                <span className="text-xs text-slate-400 font-medium">Already have an account? </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('login')}
+                  className="text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline cursor-pointer ml-1"
+                >
+                  Sign In
+                </button>
+              </div>
             </form>
           )}
         </div>
@@ -421,5 +409,17 @@ export default function UserLoginPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function UserLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#060c15] flex items-center justify-center text-amber-400">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    }>
+      <UserLoginPageContent />
+    </Suspense>
   );
 }

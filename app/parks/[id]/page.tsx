@@ -99,6 +99,11 @@ export default function ParkDetailPage() {
   });
 
   const handleOpenBooking = (pkg?: SafariPackageDoc) => {
+    if (!user) {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/parks';
+      router.push('/login?redirect=' + encodeURIComponent(currentPath));
+      return;
+    }
     setSelectedPackage((pkg as SafariPackage) || (parkPackages[0] as SafariPackage) || (SAFARI_PACKAGES[0] as SafariPackage));
     setIsBookingOpen(true);
   };

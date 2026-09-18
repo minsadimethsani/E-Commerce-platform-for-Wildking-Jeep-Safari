@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   User,
@@ -17,7 +17,9 @@ import {
   Loader2,
   Compass,
   Star,
-  Award
+  Award,
+  Settings,
+  Bell
 } from 'lucide-react';
 import { useAuth, UserProfile } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -32,6 +34,7 @@ interface AccountModalProps {
   onLogin?: (user: UserProfile) => void;
   onLogout?: () => void;
   onOpenBooking?: () => void;
+  initialTab?: 'overview' | 'bookings' | 'settings';
 }
 
 const FEATURED_IMAGE = "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=1200";
@@ -39,14 +42,46 @@ const FEATURED_IMAGE = "https://images.unsplash.com/photo-1516426122078-c23e7631
 export const AccountModal: React.FC<AccountModalProps> = ({
   isOpen,
   onClose,
-  onOpenBooking
+  onOpenBooking,
+  initialTab = 'overview',
 }) => {
-  const { user: authUser, login, register, logout: authLogout } = useAuth();
+  const { user: authUser, login, register, logout: authLogout, updateProfile } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useToast();
   const user = authUser;
 
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  const [profileTab, setProfileTab] = useState<'overview' | 'bookings'>('overview');
+  const [profileTab, setProfileTab] = useState<'overview' | 'bookings' | 'settings'>(initialTab || 'overview');
+
+  // Profile Settings state
+  const [settingsName, setSettingsName] = useState(authUser?.name || '');
+  const [settingsPhone, setSettingsPhone] = useState(authUser?.phone || '');
+  const [notifyWhatsapp, setNotifyWhatsapp] = useState(true);
+  const [notifyEmail, setNotifyEmail] = useState(true);
+
+  useEffect(() => {
+    if (initialTab) {
+      setProfileTab(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (authUser) {
+      setSettingsName(authUser.name || '');
+      setSettingsPhone(authUser.phone || '');
+    }
+  }, [authUser]);
+
+  const handleSaveSettings = () => {
+    if (!settingsName.trim()) {
+      showWarning('Validation', 'Please enter your name.');
+      return;
+    }
+    updateProfile({
+      name: settingsName.trim(),
+      phone: settingsPhone.trim(),
+    });
+    showSuccess('Settings Updated', 'Your profile preferences have been saved successfully.');
+  };
 
   // Login form state & errors
   const [email, setEmail] = useState('');
@@ -203,7 +238,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               </div>
               <div>
                 <h3 className="text-base font-extrabold uppercase tracking-wider text-white">
-                  {user ? 'Expedition Member Portal' : 'Wildking Authentication'}
+                  {user ? 'Expedition Member Portal' : 'Wildking Jeep Safari'}
                 </h3>
                 <p className="text-xs text-amber-400/90 font-medium">
                   {user ? `Logged in as ${user.name}` : 'Manage your luxury 4x4 safari bookings'}
@@ -246,8 +281,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   </button>
                 </div>
 
-                {/* Navigation Tabs (Overview vs Bookings) */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-bold">
+                {/* Navigation Tabs (Overview vs Bookings vs Settings) */}
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-bold">
                   <button
                     onClick={() => setProfileTab('overview')}
                     className={`py-2 rounded-lg transition-all cursor-pointer ${
@@ -256,7 +291,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Account Overview
+                    Overview
                   </button>
                   <button
                     onClick={() => setProfileTab('bookings')}
@@ -267,6 +302,16 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     }`}
                   >
                     My Safaris ({user.bookings ? user.bookings.length : 0})
+                  </button>
+                  <button
+                    onClick={() => setProfileTab('settings')}
+                    className={`py-2 rounded-lg transition-all cursor-pointer ${
+                      profileTab === 'settings'
+                        ? 'bg-amber-500 text-slate-950 shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Settings
                   </button>
                 </div>
 
@@ -309,7 +354,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       </button>
                     )}
                   </div>
-                ) : (
+                ) : profileTab === 'bookings' ? (
                   /* Bookings Tab */
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                     {(!user.bookings || user.bookings.length === 0) ? (
@@ -352,45 +397,115 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       ))
                     )}
                   </div>
+                ) : (
+                  /* Settings Tab */
+                  <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                    {/* Profile Information Edit Form */}
+                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                        <User className="w-4 h-4 text-amber-400" />
+                        <span>Personal Details</span>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            value={settingsName}
+                            onChange={(e) => setSettingsName(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                            placeholder="Your full name"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                            Phone Number (WhatsApp for Driver Briefings)
+                          </label>
+                          <input
+                            type="tel"
+                            value={settingsPhone}
+                            onChange={(e) => setSettingsPhone(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                            placeholder="+1 (555) 000-0000"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            value={user.email}
+                            disabled
+                            className="w-full px-3 py-2 rounded-xl bg-slate-950/50 border border-slate-800 text-xs text-slate-400 cursor-not-allowed"
+                          />
+                        </div>
+
+                        <button
+                          onClick={handleSaveSettings}
+                          className="btn-golden-glow w-full py-2 px-3 rounded-xl font-bold uppercase text-xs tracking-wider text-slate-950 flex items-center justify-center gap-2 shadow-md cursor-pointer mt-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
+                          <span>Save Changes</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expedition & Notification Preferences */}
+                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                        <Bell className="w-4 h-4 text-amber-400" />
+                        <span>Safari Alerts & Briefings</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer">
+                          <span className="text-xs text-slate-300">WhatsApp Driver Contact & Pickup Briefings</span>
+                          <input
+                            type="checkbox"
+                            checked={notifyWhatsapp}
+                            onChange={(e) => setNotifyWhatsapp(e.target.checked)}
+                            className="w-4 h-4 accent-amber-500 rounded"
+                          />
+                        </label>
+
+                        <label className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer">
+                          <span className="text-xs text-slate-300">Email Booking Vouchers & Sightings Reports</span>
+                          <input
+                            type="checkbox"
+                            checked={notifyEmail}
+                            onChange={(e) => setNotifyEmail(e.target.checked)}
+                            className="w-4 h-4 accent-amber-500 rounded"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Security & Sign Out Section */}
+                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-slate-200">Session Security</div>
+                        <div className="text-[11px] text-slate-400">Log out of your member session on this device</div>
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="px-3.5 py-1.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 hover:bg-red-500/25 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-red-400" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (
               /* AUTHENTICATION FORM (SIGN IN VS REGISTER) */
               <div className="space-y-6">
-                
-                {/* Segmented Tab Switcher */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-extrabold">
-                  <button
-                    onClick={() => {
-                      setActiveTab('login');
-                      setLoginErrors({});
-                      setLoginBannerError(null);
-                    }}
-                    className={`py-2.5 rounded-xl transition-all cursor-pointer ${
-                      activeTab === 'login'
-                        ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Member Sign In
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('register');
-                      setRegErrors({});
-                      setRegBannerError(null);
-                      setRegConfirmPassword('');
-                    }}
-                    className={`py-2.5 rounded-xl transition-all cursor-pointer ${
-                      activeTab === 'register'
-                        ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Create Account
-                  </button>
-                </div>
-
                 {activeTab === 'login' ? (
                   /* SIGN IN FORM */
                   <form onSubmit={handleSignInSubmit} className="space-y-4">
@@ -460,19 +575,23 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                           <span>Signing In...</span>
                         </>
                       ) : (
-                        <span>Sign In to Portal</span>
+                        <span>Sign In</span>
                       )}
                     </button>
 
-                    <div className="pt-3 border-t border-slate-800 text-center">
-                      <span className="text-[11px] text-slate-400 block mb-2 font-medium">Want to try instant demo login?</span>
+                    <div className="text-center pt-3 border-t border-slate-800/80">
+                      <span className="text-xs text-slate-400 font-medium">Don't have an account? </span>
                       <button
                         type="button"
-                        onClick={handleDemoSignIn}
-                        className="px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer hover:scale-[1.02]"
+                        onClick={() => {
+                          setActiveTab('register');
+                          setRegErrors({});
+                          setRegBannerError(null);
+                          setRegConfirmPassword('');
+                        }}
+                        className="text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline cursor-pointer ml-1"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                        <span>One-Click Demo VIP Account</span>
+                        Sign Up
                       </button>
                     </div>
                   </form>
@@ -623,6 +742,21 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         <span>Create Account & Continue</span>
                       )}
                     </button>
+
+                    <div className="text-center pt-3 border-t border-slate-800/80">
+                      <span className="text-xs text-slate-400 font-medium">Already have an account? </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab('login');
+                          setLoginErrors({});
+                          setLoginBannerError(null);
+                        }}
+                        className="text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline cursor-pointer ml-1"
+                      >
+                        Sign In
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>

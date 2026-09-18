@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { BookingModal } from '../../components/BookingModal';
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 function ToursContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const parkUrlParam = searchParams ? searchParams.get('park') : null;
   const searchUrlParam = searchParams ? searchParams.get('search') : null;
@@ -77,6 +78,11 @@ function ToursContent() {
   }, [parkUrlParam, searchUrlParam]);
 
   const handleOpenBooking = (pkg?: SafariPackage) => {
+    if (!user) {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/tours';
+      router.push('/login?redirect=' + encodeURIComponent(currentPath));
+      return;
+    }
     setSelectedPackage(pkg || (packagesList[0] as SafariPackage) || SAFARI_PACKAGES[0]);
     setIsBookingOpen(true);
   };
